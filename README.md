@@ -1,4 +1,4 @@
-			GECHILX VERSIONE 23.10
+			GECHILX VERSIONE 25.03.10
 
 Architettura : 64bit
 
@@ -12,14 +12,14 @@ Font di sistema per una visualizzazione corretta : DejaVu Sans Book 10
 
 			R		G		B
 
-verde		0.067	0.514   	0.024
-rosa			0.859	0.224	0.808
+verde		0.067	0.514	0.024
+rosa		0.859	0.224	0.808
 arancio		0.957	0.286	0.106
 giallo		0.957	0.969	0.106
 blu			0.106	0.145	0.969
-rosso		1		0		0	
+rosso		1		0		0
 viola		0.369	0.133	0.988
-marrone 		0.439	0.239	0.008	
+marrone 	0.439	0.239	0.008
 azzurro		0.020	0.588	0.580
 grigio		0.420	0.439	0.439
 
@@ -39,12 +39,13 @@ INSTALLAZIONE :
 - Sempre nella cartella $HOME/gechilx_client creare una cartella 'gui' e copiare al suo interno 
   il file 'gechilx.glade' e tutti i file di immagini contenuti nella cartella 'gui' del progetto.
 
-- Installare il client NFS 'sudo apt install nfs-common'
+********** - Installare il client NFS 'sudo apt install nfs-common' *******
 
 - Installare il terminale XTerm 'sudo apt install xterm'
 
-- Crearsi una copia di backup del file '/etc/fstab'.
+********** - Crearsi una copia di backup del file '/etc/fstab'.****************
 
+*********************************************************************************************************************
 - Copiare il seguente testo (escluse le virgolette iniziali e finali nel file '/etc/fstab' (le righe che
   iniziano con '#' possono essere omesse, ma servono da spiegazione) : 
  "# fa in modo che si possa montare la directory col database di gechilx dal server 10.10.19.200
@@ -54,7 +55,7 @@ INSTALLAZIONE :
   # -user		permette il montaggio anche agli utenti non superuser , NB il comando da usare è
   # 			'mount /home/crv/gechilx_client/database' altrimenti da errore
   #
-  # -noauto	non monta automaticamente il filesystem all'avvio, ma appunto bisogna usare il
+  # -noauto		non monta automaticamente il filesystem all'avvio, ma appunto bisogna usare il
   # 			comando sopra indicato
   10.10.19.200:/home/crv/gechilx_db/database	/home/crv/gechilx_client/database	nfs	rw,user,noauto	0	0"
 
@@ -62,7 +63,8 @@ INSTALLAZIONE :
   la directory 'gechilx_db/database' che appunto contiene i file del database. 
   NB: è l'eseguibile gechilx che si occupa di montare automaticamente il database dal server all'avvio e di
   smontarlo all'uscita e di segnalare se ci sono errori.
-
+**********************************************************************************************************************
+**********************************************************************************************************************
 - Configurare NFS server sul pc che fa da SERVER :
     1 - Installare nfs-kernel-server con 'sudo apt install nfs-kernel-server'.
     2 - Verificare che il server sia in esecuzione 'sudo systemctl status nfs-kernel-server'.
@@ -73,7 +75,7 @@ INSTALLAZIONE :
         e tabletmint in lettura e scrittura (rw) e altre opzioni.
     4 - Applicare i cambiamenti alla configurazione con 'sudo exportfs -a'.
     5 - Abilitare NFS server all'avvio automatico dopo un riavvio con 'sudo systemctl enable nfs-kernel-server'.
-
+***********************************************************************************************************************
  
 
 CARATTERISTICHE ATTIVE :

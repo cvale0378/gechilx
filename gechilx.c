@@ -6,12 +6,12 @@
  * Utilizza librerie GTK+-3.0
  */
 
-/* GECHILX VERSIONE 23.10 64BIT */
+/* GECHILX VERSIONE 25.03 64BIT */
 
 /* INFORMAZIONI E PROCEDURA DI INSTALLAZIONE CONTENUTE NEL FILE README.md */
  
   
-#define     VERSION	"23.10"
+#define     VERSION	"25.03"
 #define     ARCH	"64"	/* architettura cpu in char */
 #define     ARCH_NUM	64	/* architettura cpu in int  */
 
