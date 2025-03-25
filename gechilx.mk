@@ -13,11 +13,11 @@ OutDir                 := $(IntermediateDirectory)
 CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
-User                   :=crv
-Date                   :=17/03/25
+User                   :=cristiano
+Date                   :=03/25/2025
 CodeLitePath           :=/home/crv/.codelite
-LinkerName             :=/usr/bin/g++-13
-SharedObjectLinkerName :=/usr/bin/g++-13 -shared -fPIC
+LinkerName             :=/usr/bin/g++
+SharedObjectLinkerName :=/usr/bin/g++ -shared -fPIC
 ObjectSuffix           :=.o
 DependSuffix           :=.o.d
 PreprocessSuffix       :=.i
@@ -50,8 +50,8 @@ LibPath                := $(LibraryPathSwitch).
 ## AR, CXX, CC, AS, CXXFLAGS and CFLAGS can be overridden using an environment variable
 ##
 AR       := /usr/bin/ar rcu
-CXX      := /usr/bin/g++-13
-CC       := /usr/bin/gcc-13
+CXX      := /usr/bin/g++
+CC       := /usr/bin/gcc
 CXXFLAGS :=  -g -O0 -Wall $(Preprocessors)
 CFLAGS   :=  -g -Wall -O0 $(shell pkg-config --cflags gtk+-3.0) $(Preprocessors)
 ASFLAGS  := 

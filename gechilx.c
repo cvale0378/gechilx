@@ -11,8 +11,8 @@
 /* INFORMAZIONI E PROCEDURA DI INSTALLAZIONE CONTENUTE NEL FILE README.md */
  
   
-#define     VERSION	"25.03"
-#define     ARCH	"64"	/* architettura cpu in char */
+#define     VERSION		"25.03"
+#define     ARCH		"64"	/* architettura cpu in char */
 #define     ARCH_NUM	64	/* architettura cpu in int  */
 
 #include <gtk-3.0/gtk/gtk.h>
@@ -35,8 +35,10 @@ gchar file_clienti_path[MAXPATHLEN];		// percorso del file clienti.gec
 gchar file_appar_path[MAXPATHLEN];		// percorso del file appar.gec
 gchar file_compensi_path[MAXPATHLEN * 2];	// percorso del file compensi.gec
 gchar file_gui_path[MAXPATHLEN];		// percorso del file per l'interfaccia grafica(gechilx.glade)
-gchar program_dir[MAXPATHLEN];			// directory del programma
-gchar database_dir[MAXPATHLEN];			// directory del database
+gchar server_name[MAXPATHLEN];			// nome del server contenente il database del programma
+gchar program_dir_local[MAXPATHLEN];		// directory del programma in locale
+gchar database_dir_local[MAXPATHLEN];		// directory del database in locale
+gchar database_dir_server[MAXPATHLEN];		// directory del database sul server
 gchar gui_dir[MAXPATHLEN];			// directory della gui
 gchar comando[MAXPATHLEN];			// stringa per i comandi bash
 
@@ -44,7 +46,7 @@ const gchar *home_dir;				// user home directory
 const gchar *str_giorno_settimana_lett;
 const gchar *str_mese_lett;
 
-gboolean database_server_montato;	// diventa TRUE se riesce a montare il database dal server
+gboolean database_sincronizzato;	// diventa TRUE se riesce a montare il database dal server
 gboolean database_locale;		// diventa TRUE se stiamo lavorando su una copia del database locale
 gboolean modalita_ripristino;		// diventa TRUE se il programma si è aperto in modalita ripristino, quando la volta precedente si era lavorato in locale
 gboolean esci_subito;			// diventa TRUE se non è possibile montare il database di rete e non vogliamo neanche usare il database locale
@@ -56,7 +58,7 @@ int anno;
 int anno_caricato;
 int mese_caricato;
 int num_chiamata_selezionata;
-int schermata_corrente;				// serve a sapere la schermata correntemente visualizzata
+int schermata_corrente;			// serve a sapere la schermata correntemente visualizzata
 
 GtkWindow 	*window_principale, *window_modifica_chiamata, *window_informazioni;
 
@@ -70,7 +72,7 @@ GtkBox		*box_accedi, *box_menu_princ, *box_reg_chiamata, *box_modifica_chiamata,
 		*box_clienti_appar, *box_resoconto_mese, *box_statistiche_annuali, *box_cambio_pw, 
 		*box_mod_comp_att, *box_ripristino;
 
-GtkDialog   *dialog_fceom, *dialog_pwerr, *dialog_icoafc, *dialog_iafc, *dialog_elimina, *dialog_copia_dati, *dialog_flag, *dialog_agg_appar, *dialog_agg_cliente,
+GtkDialog	*dialog_fceom, *dialog_pwerr, *dialog_icoafc, *dialog_iafc, *dialog_elimina, *dialog_copia_dati, *dialog_flag, *dialog_agg_appar, *dialog_agg_cliente,
 		*dialog_vecchia_pw_err, *dialog_nuova_pw_err, *dialog_scrittura_nuova_pw_err, *dialog_conferma_cambio_pw, *dialog_comp_err, *dialog_aggiorna_db, 
 		*dialog_db_server_no;
 
@@ -106,7 +108,7 @@ GtkEntry	*entry_password,
 
 GtkWidget	*entry_agg_appar, *entry_agg_cliente;
 
-GtkButton 	*button_accedi, *button_reg_chiamata, *button_resoc_mese, *button_carica_mese,
+GtkButton	*button_accedi, *button_reg_chiamata, *button_resoc_mese, *button_carica_mese,
 		*button_indietro, *button_copia_dati, *button_salva_chiamata, *button_salva_chiamata1, 
 		*button_annulla1, *button_lista_ch_mese,  *button_elimina_ch, *button_modifica_ch, *button_database, 
 		*button_agg_cliente, *button_agg_appar, *button_elimina_appar, *button_elimina_cliente,
@@ -126,13 +128,13 @@ GtkCheckButton	*check_za, *check_za1,
 
 GtkComboBoxText		*combo_box_text_cliente, *combo_box_text_appar, *combo_box_text_cliente1, *combo_box_text_appar1, *combo_box_text_anno;
 
-GtkImage	*image_resoconto_mese, *image_stat_annuali;
+GtkImage		*image_resoconto_mese, *image_stat_annuali;
 
-GtkRadioButton*	radio_button_array[MAX_NUM_CH_MESE];
+GtkRadioButton*		radio_button_array[MAX_NUM_CH_MESE];
 
 GtkTextBuffer	*textbuffer_data, *textbuffer_mese;
 
-GtkTreeView	*view_clienti, *view_appar, *view_lista_ch_mese;
+GtkTreeView		*view_clienti, *view_appar, *view_lista_ch_mese;
 
 GtkScrolledWindow	*scr_window_lista_ch_mese, *scr_window_clienti, *scr_window_appar;
 
@@ -342,10 +344,10 @@ void non_fare_nulla()
 
 
 /* aggiorna_db_locale è la funzione che viene chiamata se rispondiamo in maniera affermativa alla richiesta 
-* di aggiornare il database locale ,che ci viene fatta tramite il dialog box creato dalla seguente funzione  crea_dialog_box_due_pulsanti */
+ * di aggiornare il database locale ,che ci viene fatta tramite il dialog box creato dalla seguente funzione  crea_dialog_box_due_pulsanti */
 void aggiorna_db_locale()
 {
-	g_sprintf(comando, "xterm %s/aggiorna_db_locale_gechilx.sh", program_dir);
+	g_sprintf(comando, "xterm %s/aggiorna_db_locale_gechilx.sh", program_dir_local);
 	system(comando);
 }
 
@@ -373,7 +375,7 @@ void uscita_normale()
 	if(!esci_subito)
 	{
 		crea_dialog_box_due_pulsanti(dialog_aggiorna_db, "ATTENZIONE!", "\n   Vuoi aggiornare il database locale ?  \n", 
-									window_principale, "Si", "No", aggiorna_db_locale, non_fare_nulla);
+						window_principale, "Si", "No", aggiorna_db_locale, non_fare_nulla);
 	}
 
 	/* se stiamo lavorando su una copia del database locale imposta a 1 il primo byte del file 'system.gec' in modo che al prossimo avvio del programma,
@@ -395,8 +397,8 @@ void uscita_normale()
 	}
 
 	// scollega il database smontando la condivisione col server
-	g_sprintf(comando, "umount %s", database_dir);
-	system(comando);
+	//g_sprintf(comando, "umount %s", database_dir_local);
+	//system(comando);
 
 	gtk_main_quit();
 }
@@ -407,8 +409,8 @@ void uscita_forzata()
 	esci_subito = TRUE;
 
 	// scollega il database smontando la condivisione col server
-	g_sprintf(comando, "umount %s", database_dir);
-	system(comando);
+	// g_sprintf(comando, "umount %s", database_dir);
+	// system(comando);
 
 	gtk_widget_destroy((GtkWidget*)window_principale);
 	gtk_main_quit();
@@ -473,15 +475,15 @@ GList* ordina_alfabeticamente(guint n_elem_lista, GList* lista, GList* lista_ord
 
 /* copia_db_locale è la funzione che viene chiamata se rispondiamo in maniera affermativa alla richiesta di proseguire su di
 * una copia del database locale ,che ci viene fatta tramite il dialog box creato dalla seguente funzione crea_dialog_box_due_pulsanti */
-void copia_db_locale()
-{
-	// copia il database locale (cartella 'database.local') nella cartella database per poterci lavorare
-	g_sprintf(comando, "cp %s/database.local/* %s/database", program_dir, program_dir);
-	if(!(system(comando))) database_locale = TRUE;	/* se la copia del database locale dalla directory 'database.local' alla directory 'database' è andata
-							 * a buon fine, setta la variabile 'database_locale' a TRUE che servirà in seguito per sapere che stiamo
-							 * lavorando su una copia del database locale e non  sul server. */
-	return;
-}
+//void copia_db_locale()
+//{
+//	// copia il database locale (cartella 'database.local') nella cartella database per poterci lavorare
+//	g_sprintf(comando, "cp %s/database.local/* %s/database", program_dir_local, program_dir);
+//	if(!(system(comando))) database_locale = TRUE;	/* se la copia del database locale dalla directory 'database.local' alla directory 'database' è andata
+//							 * a buon fine, setta la variabile 'database_locale' a TRUE che servirà in seguito per sapere che stiamo
+//							 * lavorando su una copia del database locale e non sul server. */
+//	return;
+//}
 
 
 /* converte una stringa di numeri nell'intero corrispondente, max 9 cifre */
@@ -1248,11 +1250,11 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 	}
 
 	/* se non è stato montato il database sul server segnala il problema e chiede se si vuole proseguire con una copia del database locale */
-	if(!(database_server_montato))
+	if(!(database_sincronizzato))
 	{
 		crea_dialog_box_due_pulsanti(dialog_db_server_no, "ATTENZIONE !", 
 					"\n Non è stato possibile montare il database sul server.\n Vuoi proseguire con una copia del database locale ? \n", 
-					window_principale, "Si", "No", copia_db_locale, uscita_forzata);
+					window_principale, "Si", "No", non_fare_nulla, uscita_forzata);
 	}
 
 	/* ottiene data corrente e mese e giorno della settimana come stringhe */
@@ -1270,7 +1272,7 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 	gtk_text_buffer_set_text(textbuffer_data, data, strlen(data));
 
 	/* formatta percorso file chiamate */
-	sprintf(file_chiamate_mese_path, "%s/database/%s%i.gec", program_dir, str_mese_lett, anno);
+	sprintf(file_chiamate_mese_path, "%s/database/%s%i.gec", program_dir_local, str_mese_lett, anno);
 
 	mostra_nome_file_ch_mese_caricato();
 
@@ -1310,7 +1312,7 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 	}
 
 	/* formatta percorso file compensi */
-	sprintf(file_compensi_path, "%s/database/compensi.gec", program_dir);
+	sprintf(file_compensi_path, "%s/database/compensi.gec", program_dir_local);
 
 	/* gfile relativo al file compensi */
 	file_compensi = g_file_new_for_path(file_compensi_path);
@@ -1694,7 +1696,7 @@ void calcola_totali_mesi(float *imp_mese, float *iva_mese, float *tot_mese, cons
 		}
 
 		/* formatta percorso file chiamate */
-		sprintf(file_chiamate_mese_path, "%s/database/%s%i.gec", program_dir, &str_mese[m] [0], anno_scelto);
+		sprintf(file_chiamate_mese_path, "%s/database/%s%i.gec", program_dir_local, &str_mese[m] [0], anno_scelto);
 
 		/* conta le attivita svolte nel mese e le salva i totali nell'array di strutture att. Il valore del primo
 		* indice dell'array corrisponde al mese, il valore del secondo indice dell'array corrisponde al giorno del mese*/
@@ -1766,7 +1768,7 @@ void calcola_attivita_tot_mesi(attivita *tot_attivita_mese, const gchar *string_
 		}
 
 	/* formatta percorso file chiamate */
-	sprintf(file_chiamate_mese_path, "%s/database/%s%i.gec", program_dir, &str_mese[m] [0], anno_scelto);
+	sprintf(file_chiamate_mese_path, "%s/database/%s%i.gec", program_dir_local, &str_mese[m] [0], anno_scelto);
 
 	/* conta le attivita svolte nel mese m e le salva i totali nell'array di strutture tot_attivita_mese[m]. 
 	 * Il valore del primo indice dell'array corrisponde al mese, il valore del secondo indice dell'array 
@@ -3946,7 +3948,7 @@ static gboolean pressed_button_carica_mese(GtkWidget *widget, gpointer callback_
 									NULL);
 
 	/* fa in modo che il dialog appena aperto mostri subito il contenuto della cartella database dopo sono presenti i file chiamate */
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), database_dir);;
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), database_dir_local);;
 
 	/* visualizza ed esegue il dialog finchè non lo chiudiamo o premiamo apri o annulla. Se premiamo apri ottiene in filename il nome 
 	 * (completo di percorso)
@@ -4713,10 +4715,9 @@ int main(int argc, char** argv) {
 	gchar label_descrizione_accesso_testo[256];
 
 	/* setta alcune variabili globali usate in seguito */
-	database_server_montato = FALSE;
+	database_sincronizzato = FALSE;
 	database_locale = FALSE;
 	modalita_ripristino = FALSE;
-
 	esci_subito = FALSE;
 
 	/* percorso della directoy HOME */
@@ -4724,12 +4725,14 @@ int main(int argc, char** argv) {
 
 	/* definisce le directory e i percorsi dei file principali */
 	g_sprintf(gui_dir, "%s/gechilx_client/gui", home_dir);
-	g_sprintf(program_dir, "%s/gechilx_client", home_dir);
-	g_sprintf(database_dir, "%s/gechilx_client/database", home_dir);
-	g_sprintf(file_appar_path, "%s/database/appar.gec", program_dir);
-	g_sprintf(file_clienti_path, "%s/database/clienti.gec", program_dir);
+	g_sprintf(program_dir_local, "%s/gechilx_client", home_dir);
+	g_sprintf(database_dir_local, "%s/gechilx_client/database", home_dir);
+	g_sprintf(file_appar_path, "%s/database/appar.gec", program_dir_local);
+	g_sprintf(file_clienti_path, "%s/database/clienti.gec", program_dir_local);
 	g_sprintf(file_config_path, "%s/gechilx_client/system.gec", home_dir);
 	g_sprintf(file_gui_path, "%s/gechilx.glade", gui_dir);
+	g_sprintf(server_name, "ubuntu2025.freeddns.org");
+	g_sprintf(database_dir_server, "%s:~/gechilx_db/database", server_name);
 
 	/* inizializza GTK+ */
 	gtk_init(&argc, &argv);
@@ -4792,12 +4795,11 @@ int main(int argc, char** argv) {
 	}
 	else // avvio normale del programma
 	{
-		/* collega il database montando la condivisione col server, se l'operazione è andata a buon fine setta la variabile 
-		 * globale 'database_server_montato' a TRUE, perchè dopo servirà */
-		g_sprintf(comando, "mount %s", database_dir);
-		if(!(system(comando))) database_server_montato = TRUE;	/* la funzione system esegue il comando di sistema passato come argomento e 
-									 * ritorna zero se è andato a buon fine e se è andato a buon fine la 
-									 * variabile 'database_server_montato' diventa TRUE */
+		/* prova a sincronizzare la directory del database sul server con quella in locale , se la sincronizzazione va a buon fine
+		 * abbiamo una copia del database presente sul server remoto nel pc locale , la variabile 'database_sincronizzato' diventa TRUE
+		 * e il programma prosegue normalmente, altrimenti ci verrà chiesto se vogliamo lavorare su una copia del batabase locale */
+		g_sprintf(comando, "rsync --rsh=ssh %s/* %s/", database_dir_server, database_dir_local);
+		if(!(system(comando))) database_sincronizzato = TRUE;
 
 		gtk_window_set_default_size(window_principale, 800, 600);
 
