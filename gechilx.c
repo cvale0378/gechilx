@@ -11,8 +11,8 @@
 /* INFORMAZIONI E PROCEDURA DI INSTALLAZIONE CONTENUTE NEL FILE README.md */
  
   
-#define     VERSION		"25.03"
-#define     ARCH		"64"	/* architettura cpu in char */
+#define     VERSION	"25.03"
+#define     ARCH	"64"	/* architettura cpu in char */
 #define     ARCH_NUM	64	/* architettura cpu in int  */
 
 #include <gtk-3.0/gtk/gtk.h>
@@ -347,7 +347,7 @@ void non_fare_nulla()
  * di aggiornare il database locale ,che ci viene fatta tramite il dialog box creato dalla seguente funzione  crea_dialog_box_due_pulsanti */
 void aggiorna_db_locale()
 {
-	g_sprintf(comando, "xterm %s/aggiorna_db_locale_gechilx.sh", program_dir_local);
+	g_sprintf(comando, "%s/aggiorna_db_locale_gechilx.sh > %s/log/log_aggiornamento_db_locale", program_dir_local, program_dir_local);
 	system(comando);
 }
 
@@ -396,10 +396,6 @@ void uscita_normale()
 		gtk_main_quit();
 	}
 
-	// scollega il database smontando la condivisione col server
-	//g_sprintf(comando, "umount %s", database_dir_local);
-	//system(comando);
-
 	gtk_main_quit();
 }
 
@@ -407,10 +403,6 @@ void uscita_normale()
 void uscita_forzata()
 {
 	esci_subito = TRUE;
-
-	// scollega il database smontando la condivisione col server
-	// g_sprintf(comando, "umount %s", database_dir);
-	// system(comando);
 
 	gtk_widget_destroy((GtkWidget*)window_principale);
 	gtk_main_quit();
@@ -475,15 +467,15 @@ GList* ordina_alfabeticamente(guint n_elem_lista, GList* lista, GList* lista_ord
 
 /* copia_db_locale è la funzione che viene chiamata se rispondiamo in maniera affermativa alla richiesta di proseguire su di
 * una copia del database locale ,che ci viene fatta tramite il dialog box creato dalla seguente funzione crea_dialog_box_due_pulsanti */
-//void copia_db_locale()
-//{
-//	// copia il database locale (cartella 'database.local') nella cartella database per poterci lavorare
-//	g_sprintf(comando, "cp %s/database.local/* %s/database", program_dir_local, program_dir);
-//	if(!(system(comando))) database_locale = TRUE;	/* se la copia del database locale dalla directory 'database.local' alla directory 'database' è andata
-//							 * a buon fine, setta la variabile 'database_locale' a TRUE che servirà in seguito per sapere che stiamo
-//							 * lavorando su una copia del database locale e non sul server. */
-//	return;
-//}
+void copia_db_locale()
+{
+	// copia il database locale (cartella 'database.local') nella cartella database per poterci lavorare
+	g_sprintf(comando, "cp %s/database.local/* %s/database", program_dir_local, program_dir_local);
+	if(!(system(comando))) database_locale = TRUE;	/* se la copia del database locale dalla directory 'database.local' alla directory 'database' è andata
+							 * a buon fine, setta la variabile 'database_locale' a TRUE che servirà in seguito per sapere che stiamo
+							 * lavorando su una copia del database locale e non sul server. */
+	return;
+}
 
 
 /* converte una stringa di numeri nell'intero corrispondente, max 9 cifre */
@@ -1254,7 +1246,7 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 	{
 		crea_dialog_box_due_pulsanti(dialog_db_server_no, "ATTENZIONE !", 
 					"\n Non è stato possibile montare il database sul server.\n Vuoi proseguire con una copia del database locale ? \n", 
-					window_principale, "Si", "No", non_fare_nulla, uscita_forzata);
+					window_principale, "Si", "No", copia_db_locale, uscita_forzata);
 	}
 
 	/* ottiene data corrente e mese e giorno della settimana come stringhe */
@@ -1312,7 +1304,7 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 	}
 
 	/* formatta percorso file compensi */
-	sprintf(file_compensi_path, "%s/database/compensi.gec", program_dir_local);
+	sprintf(file_compensi_path, "%s/database.local/compensi.gec", program_dir_local);
 
 	/* gfile relativo al file compensi */
 	file_compensi = g_file_new_for_path(file_compensi_path);
@@ -4798,7 +4790,7 @@ int main(int argc, char** argv) {
 		/* prova a sincronizzare la directory del database sul server con quella in locale , se la sincronizzazione va a buon fine
 		 * abbiamo una copia del database presente sul server remoto nel pc locale , la variabile 'database_sincronizzato' diventa TRUE
 		 * e il programma prosegue normalmente, altrimenti ci verrà chiesto se vogliamo lavorare su una copia del batabase locale */
-		g_sprintf(comando, "rsync --rsh=ssh %s/* %s/", database_dir_server, database_dir_local);
+		g_sprintf(comando, "rsync --times --verbose --rsh=ssh %s/* %s/ > %s/log/log_server_to_local_sync.txt", database_dir_server, database_dir_local, program_dir_local);
 		if(!(system(comando))) database_sincronizzato = TRUE;
 
 		gtk_window_set_default_size(window_principale, 800, 600);

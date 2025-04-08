@@ -36,6 +36,8 @@ INSTALLAZIONE :
 
 - Sempre nella cartella $HOME/gechilx_client creare le cartelle 'database' e 'database.local'.
 
+- Sempre nella cartella $HOME/gechilx_client creare la cartella 'log'.
+
 - Sempre nella cartella $HOME/gechilx_client creare una cartella 'gui' e copiare al suo interno 
   il file 'gechilx.glade' e tutti i file di immagini contenuti nella cartella 'gui' del progetto.
 

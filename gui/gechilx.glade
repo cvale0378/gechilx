@@ -170,7 +170,7 @@ del server.</property>
                     <property name="can-focus">False</property>
                     <property name="margin-top">5</property>
                     <property name="margin-bottom">6</property>
-                    <property name="pixbuf">../../../../gechilx_client/gui/gechilx_simbolo_blu.png</property>
+                    <property name="pixbuf">gechilx_simbolo_blu.png</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -3471,7 +3471,7 @@ Vecchia Password</property>
                               <object class="GtkImage">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="pixbuf">../../../../gechilx_client/gui/gechilx_logo_grande.png</property>
+                                <property name="pixbuf">gechilx_logo_grande.png</property>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -3770,7 +3770,7 @@ Vecchia Password</property>
           <object class="GtkImage">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="pixbuf">../../../../gechilx_client/gui/informazioni.png</property>
+            <property name="pixbuf">informazioni.png</property>
           </object>
           <packing>
             <property name="expand">False</property>
