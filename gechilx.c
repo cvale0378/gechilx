@@ -46,11 +46,9 @@ const gchar *home_dir;				// user home directory
 const gchar *str_giorno_settimana_lett;
 const gchar *str_mese_lett;
 
-gboolean database_sincronizzato;	// diventa TRUE se riesce a montare il database dal server
-gboolean database_locale;		// diventa TRUE se stiamo lavorando su una copia del database locale
-gboolean modalita_ripristino;		// diventa TRUE se il programma si è aperto in modalita ripristino, quando la volta precedente si era lavorato in locale
-gboolean esci_subito;			// diventa TRUE se non è possibile montare il database di rete e non vogliamo neanche usare il database locale
-gboolean cancel;			// diventa TRUE se premiamo Cancel nei dialog box a due pulsanti con entry
+gboolean database_sincronizzato;		// diventa TRUE se riesce a sincronizzare il database dal server al locale
+gboolean modalita_ripristino;			// diventa TRUE se il programma si è aperto in modalita ripristino, quando la volta precedente si era lavorato in locale
+gboolean cancel;				// diventa TRUE se premiamo Cancel nei dialog box a due pulsanti con entry
 
 int giorno;
 int mese;
@@ -72,9 +70,9 @@ GtkBox		*box_accedi, *box_menu_princ, *box_reg_chiamata, *box_modifica_chiamata,
 		*box_clienti_appar, *box_resoconto_mese, *box_statistiche_annuali, *box_cambio_pw, 
 		*box_mod_comp_att, *box_ripristino;
 
-GtkDialog	*dialog_fceom, *dialog_pwerr, *dialog_icoafc, *dialog_iafc, *dialog_elimina, *dialog_copia_dati, *dialog_flag, *dialog_agg_appar, *dialog_agg_cliente,
-		*dialog_vecchia_pw_err, *dialog_nuova_pw_err, *dialog_scrittura_nuova_pw_err, *dialog_conferma_cambio_pw, *dialog_comp_err, *dialog_aggiorna_db, 
-		*dialog_db_server_no;
+GtkDialog	*dialog_fceom, *dialog_pwerr, *dialog_icoafc, *dialog_iafc, *dialog_elimina, *dialog_copia_dati, *dialog_flag, *dialog_agg_appar,
+		*dialog_agg_cliente, *dialog_vecchia_pw_err, *dialog_nuova_pw_err, *dialog_scrittura_nuova_pw_err, *dialog_conferma_cambio_pw,
+		*dialog_comp_err, *dialog_db_server_no, *dialog_err_sincronizzazione;
 
 GtkViewport	*viewport;
 
@@ -343,72 +341,6 @@ void non_fare_nulla()
 }
 
 
-/* aggiorna_db_locale è la funzione che viene chiamata se rispondiamo in maniera affermativa alla richiesta 
- * di aggiornare il database locale ,che ci viene fatta tramite il dialog box creato dalla seguente funzione  crea_dialog_box_due_pulsanti */
-void aggiorna_db_locale()
-{
-	g_sprintf(comando, "%s/aggiorna_db_locale_gechilx.sh > %s/log/log_aggiornamento_db_locale", program_dir_local, program_dir_local);
-	system(comando);
-}
-
-
-/* esce dal programma */
-void uscita_normale()
- {
-	 if(modalita_ripristino)
-	{
-		/* apre il file di configurazione 'system.gec' in lettura e per future modifiche (r+) e ne ottiene il puntatore allo stream */
-		FILE *stream_file_config;
-		stream_file_config = fopen(file_config_path, "r+");
-
-		/* scrive '0' nel primo byte del file 'system.gec' */
-		fseek(stream_file_config, 0, SEEK_SET);
-		fputc('0', stream_file_config);
-
-		fclose(stream_file_config);
-
-		gtk_main_quit();
-	}
-
-	/* non visualizza il dialog di richiesta di aggiornamento del database locale se non siamo ancora entrati con la password o se siamo in modalità 
-	 * ripristino */ 
-	if(!esci_subito)
-	{
-		crea_dialog_box_due_pulsanti(dialog_aggiorna_db, "ATTENZIONE!", "\n   Vuoi aggiornare il database locale ?  \n", 
-						window_principale, "Si", "No", aggiorna_db_locale, non_fare_nulla);
-	}
-
-	/* se stiamo lavorando su una copia del database locale imposta a 1 il primo byte del file 'system.gec' in modo che al prossimo avvio del programma,
-	* controllando quel byte sapremo se la volta precedente abbiamo lavorato sulla copia del database locale. Se cosi fosse il programma ci 
-	* avviserà e ci dirà di sistemare le cose */
-	if(database_locale)
-	{
-		/* apre il file di configurazione 'system.gec' in lettura e per future modifiche (r+) e ne ottiene il puntatore allo stream */
-		FILE *stream_file_config;
-		stream_file_config = fopen(file_config_path, "r+");
-
-		/* scrive '1' nel primo byte del file 'system.gec' */
-		fseek(stream_file_config, 0, SEEK_SET);
-		fputc('1', stream_file_config);
-
-		fclose(stream_file_config);
-
-		gtk_main_quit();
-	}
-
-	gtk_main_quit();
-}
-
-
-void uscita_forzata()
-{
-	esci_subito = TRUE;
-
-	gtk_widget_destroy((GtkWidget*)window_principale);
-	gtk_main_quit();
-}
-
-
 /* ordina alfabeticamente una lista di stringhe */
 GList* ordina_alfabeticamente(guint n_elem_lista, GList* lista, GList* lista_ordinata)
 {
@@ -462,19 +394,6 @@ GList* ordina_alfabeticamente(guint n_elem_lista, GList* lista, GList* lista_ord
 	}
 
 	return lista_ordinata;
-}
-
-
-/* copia_db_locale è la funzione che viene chiamata se rispondiamo in maniera affermativa alla richiesta di proseguire su di
-* una copia del database locale ,che ci viene fatta tramite il dialog box creato dalla seguente funzione crea_dialog_box_due_pulsanti */
-void copia_db_locale()
-{
-	// copia il database locale (cartella 'database.local') nella cartella database per poterci lavorare
-	g_sprintf(comando, "cp %s/database.local/* %s/database", program_dir_local, program_dir_local);
-	if(!(system(comando))) database_locale = TRUE;	/* se la copia del database locale dalla directory 'database.local' alla directory 'database' è andata
-							 * a buon fine, setta la variabile 'database_locale' a TRUE che servirà in seguito per sapere che stiamo
-							 * lavorando su una copia del database locale e non sul server. */
-	return;
 }
 
 
@@ -1140,26 +1059,91 @@ void inserisci_solo_numeri(GtkEditable *widget, gchar *text, gchar *length, gint
 }
 
 
+void uscita()
+{
+	int sincronizzazione_verso_server;
+
+	/* se siamo nella schermata ripristino o in quella di accesso, esce senza sincronizzare il database locale verso il server*/
+	if(schermata_corrente == SCHERMATA_ACCESSO)
+	{
+		goto USCITA;
+	}
+
+	/* se siamo in modalità ripristino (cioè se alla chiusura precedente non era riuscita la sincronizzazione del database verso il server),
+	 * ora che stiamo uscendo da essa, risetta a zero il byte di controllo così al prossimo riavvio partirà in modalità normale */
+	if(modalita_ripristino)
+	{
+		/* apre il file di configurazione 'system.gec' in lettura e per future modifiche (r+) e ne ottiene il puntatore allo stream */
+		FILE *stream_file_config;
+		stream_file_config = fopen(file_config_path, "r+");
+
+		/* scrive '0' nel primo byte del file 'system.gec' */
+		fseek(stream_file_config, 0, SEEK_SET);
+		fputc('0', stream_file_config);
+
+		fclose(stream_file_config);
+
+		goto USCITA;
+	}
+
+	/* separatore dei vari record del log */
+		g_sprintf(comando, "echo \"---------------------------------------------------------------------------------------\" >> %s/log/log_local_to_server_sync.txt",
+				   program_dir_local);
+		system(comando);
+
+	/* inserisce la data e ora nel file log */
+	g_sprintf(comando, "date >> %s/log/log_local_to_server_sync.txt", program_dir_local);
+	system(comando);
+	
+	/* sincronizza le modifiche effettuate nel database locale verso il server e ne da il resoconto nel fil di log*/
+	g_sprintf(comando, "rsync --times --verbose --rsh=ssh %s/* %s/ >> %s/log/log_local_to_server_sync.txt", database_dir_local, database_dir_server, program_dir_local);
+	sincronizzazione_verso_server = system(comando);
+
+	/* se la sincronizzazione del database locale verso il server da errore, imposta a 1 il primo byte del file 'system.gec' in modo che al prossimo avvio del 
+	* programma, controllando quel byte sapremo che la volta precedente non abbiamo sincronizzato verso il server i file del database locale modificati. 
+	* Se cosi fosse il programma ci avviserà e ci dirà di sistemare le cose */
+	if(sincronizzazione_verso_server != 0)
+	{
+		/* apre il file di configurazione 'system.gec' in lettura e per future modifiche (r+) e ne ottiene il puntatore allo stream */
+		FILE *stream_file_config;
+		stream_file_config = fopen(file_config_path, "r+");
+
+		/* scrive '1' nel primo byte del file 'system.gec' */
+		fseek(stream_file_config, 0, SEEK_SET);
+		fputc('1', stream_file_config);
+
+		fclose(stream_file_config);
+
+		crea_dialog_box_un_pulsante(dialog_err_sincronizzazione, "ATTENZIONE!", "\n   Errore durante la sincronizzazione del database locale verso il server    \n",
+						window_principale, "   Esci   ");
+
+		/* annota l'errore nel fil di log */
+		g_sprintf(comando, "echo \"errore : sincronizzazione verso il server non riuscita\" >> %s/log/log_local_to_server_sync.txt", program_dir_local);
+		system(comando);
+	}
+
+	USCITA:
+	gtk_widget_destroy((GtkWidget*)window_principale);
+	gtk_main_quit();
+}
+
+
 /* se viene premuto il pulsante di chiusura sulla titlebar , quando questa funzione ritorna FALSE , il delete-event diventa un destroy siganl
  * però se viene premuto il pulsante di chiusura sulla titlebar della window_modifica_chiamata, non vogliamo che venga distrutta ma solo nascosta,
  * quindi facciamo in modo che la funzione ritorni TRUE ,così il delete-event non diventa un destroy signal */
 gint delete_event(GtkWidget *widget, GdkEvent event, gpointer data)
 {
-	/* se vogliamo uscire senza ancora aver effettuato il login, non ci chiede di aggiornare il database locale */
-	if((schermata_corrente == SCHERMATA_ACCESSO) || (schermata_corrente == SCHERMATA_RIPRISTINO))
-	{
-		esci_subito = TRUE;
-	}
-
 	/* se il delete-event è arrivato dalla window_modifica_chiamata ,la finestra non viene distrutta ma solo nascosta. Così facendo non dobbiamo ricarcarla
 	 * dal builder con tutti i suoi widget ogni volta che premiamo il button_modifica_chiamata */
 	if(widget == ((GtkWidget*)window_modifica_chiamata))
 	{
 		gtk_widget_hide((GtkWidget*)window_modifica_chiamata);
-		
+
 		return TRUE;
 	}
 
+	
+	uscita();
 	/* quando questa funzione ritorna FALSE , il delete-event diventa un destroy signal */
 	return FALSE;
 }
@@ -1241,12 +1225,16 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 		}
 	}
 
-	/* se non è stato montato il database sul server segnala il problema e chiede se si vuole proseguire con una copia del database locale */
+	/* se il database locale non è stato sincronizzato con il database sul server segnala il problema e chiede se si vuole proseguire con una copia del database locale */
 	if(!(database_sincronizzato))
 	{
 		crea_dialog_box_due_pulsanti(dialog_db_server_no, "ATTENZIONE !", 
-					"\n Non è stato possibile montare il database sul server.\n Vuoi proseguire con una copia del database locale ? \n", 
-					window_principale, "Si", "No", copia_db_locale, uscita_forzata);
+					"\n Non è stato possibile sincronizzare il database locale con quello sul server.\n Vuoi proseguire con una copia del database locale ? \n", 
+					window_principale, "Si", "No", non_fare_nulla, uscita);
+
+		/* segna che stiamo lavorando sul database locale non sincronizzato col server nel file di log */
+		g_sprintf(comando, "echo \" - Si sta lavorando sul database locale non sicnronizzato col server\" >> %s/log/log_server_to_local_sync.txt", program_dir_local);
+		system(comando);
 	}
 
 	/* ottiene data corrente e mese e giorno della settimana come stringhe */
@@ -1304,7 +1292,7 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 	}
 
 	/* formatta percorso file compensi */
-	sprintf(file_compensi_path, "%s/database.local/compensi.gec", program_dir_local);
+	sprintf(file_compensi_path, "%s/compensi.gec", database_dir_local);
 
 	/* gfile relativo al file compensi */
 	file_compensi = g_file_new_for_path(file_compensi_path);
@@ -3939,7 +3927,7 @@ static gboolean pressed_button_carica_mese(GtkWidget *widget, gpointer callback_
 									("_Open"), GTK_RESPONSE_ACCEPT,
 									NULL);
 
-	/* fa in modo che il dialog appena aperto mostri subito il contenuto della cartella database dopo sono presenti i file chiamate */
+	/* fa in modo che il dialog appena aperto mostri subito il contenuto della cartella database dove sono presenti i file chiamate */
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), database_dir_local);;
 
 	/* visualizza ed esegue il dialog finchè non lo chiudiamo o premiamo apri o annulla. Se premiamo apri ottiene in filename il nome 
@@ -4150,12 +4138,8 @@ static gboolean pressed_button_copia_dati(GtkWidget *widget, gpointer callback_d
 							NULL);
 
 	/* imposta il dialog per la copia dati */
-	dialog_copia_dati = GTK_DIALOG(gtk_dialog_new_with_buttons(
-								"COPIA_DATI",
-								window_principale,
-								GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-								"Copia negli appunti", GTK_RESPONSE_YES,
-								NULL));
+	dialog_copia_dati = GTK_DIALOG(gtk_dialog_new_with_buttons("COPIA_DATI", window_principale,GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+								"Copia negli appunti", GTK_RESPONSE_YES, NULL));
 
 	/* inserisce il textview nel dialog */
 	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog_copia_dati));
@@ -4188,17 +4172,11 @@ static gboolean pressed_button_copia_dati(GtkWidget *widget, gpointer callback_d
 
 
 /* se viene premuto il pulsante 'Esci' */
-static gboolean pressed_button_esci(GtkWidget *widget, gpointer callback_data)
+void pressed_button_esci(GtkWidget *widget, gpointer callback_data)
 {
-	/* se siamo nella schermata ripristino o in quella di accesso, esce senza chiedere se vogliamo aggiornare il database locale */
-	if((schermata_corrente == SCHERMATA_ACCESSO) ||  (schermata_corrente == SCHERMATA_RIPRISTINO))
-	{
-		uscita_forzata();
-	}
+	g_signal_emit_by_name(window_principale, "delete_event");
 
-	uscita_normale();
-
-	return FALSE;
+	return;
 }
 
 
@@ -4549,8 +4527,6 @@ int puntatori_widget(GtkBuilder *builder)
  ****/
 void connessione_signal_handlers()
 {
-	g_signal_connect(window_principale, "destroy", G_CALLBACK(uscita_normale), NULL);
-
 	g_signal_connect(window_modifica_chiamata, "delete_event", G_CALLBACK(delete_event), NULL);
 
 	g_signal_connect(window_principale, "delete-event", G_CALLBACK(delete_event), NULL);
@@ -4708,9 +4684,7 @@ int main(int argc, char** argv) {
 
 	/* setta alcune variabili globali usate in seguito */
 	database_sincronizzato = FALSE;
-	database_locale = FALSE;
 	modalita_ripristino = FALSE;
-	esci_subito = FALSE;
 
 	/* percorso della directoy HOME */
 	home_dir = g_getenv("HOME");
@@ -4787,10 +4761,19 @@ int main(int argc, char** argv) {
 	}
 	else // avvio normale del programma
 	{
+		/* separatore dei vari record del log */
+		g_sprintf(comando, "echo \"---------------------------------------------------------------------------------------\" >> %s/log/log_server_to_local_sync.txt",
+				   program_dir_local);
+		system(comando);
+
+		/* inserisce la data e ora nel file log */
+		g_sprintf(comando, "date >> %s/log/log_server_to_local_sync.txt", program_dir_local);
+		system(comando);
+		
 		/* prova a sincronizzare la directory del database sul server con quella in locale , se la sincronizzazione va a buon fine
 		 * abbiamo una copia del database presente sul server remoto nel pc locale , la variabile 'database_sincronizzato' diventa TRUE
 		 * e il programma prosegue normalmente, altrimenti ci verrà chiesto se vogliamo lavorare su una copia del batabase locale */
-		g_sprintf(comando, "rsync --times --verbose --rsh=ssh %s/* %s/ > %s/log/log_server_to_local_sync.txt", database_dir_server, database_dir_local, program_dir_local);
+		g_sprintf(comando, "rsync --times --verbose --rsh=ssh %s/* %s/ >> %s/log/log_server_to_local_sync.txt", database_dir_server, database_dir_local, program_dir_local);
 		if(!(system(comando))) database_sincronizzato = TRUE;
 
 		gtk_window_set_default_size(window_principale, 800, 600);

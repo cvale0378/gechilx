@@ -2,88 +2,60 @@
 
 Architettura : 64bit
 
+
 Font di sistema per una visualizzazione corretta : DejaVu Sans Book 10
 
 - Titoli schermate usato carattere Monospace Bold di 45 pixel e del colore nero , coordinate sinistra-alto della scritta 130x30.
 
 - Schermata resoconto mese usato carattere Sans di 11 pixel.
 
+
 - Colori :
 
 			R		G		B
 
 verde		0.067	0.514	0.024
-rosa		0.859	0.224	0.808
+rosa			0.859	0.224	0.808
 arancio		0.957	0.286	0.106
 giallo		0.957	0.969	0.106
 blu			0.106	0.145	0.969
-rosso		1		0		0
+rosso		1	0	0
 viola		0.369	0.133	0.988
-marrone 	0.439	0.239	0.008
+marrone 		0.439	0.239	0.008
 azzurro		0.020	0.588	0.580
 grigio		0.420	0.439	0.439
 
 
-
-INSTALLAZIONE :
+	
+INSTALLAZIONE CLIENT:
 - Nella directory $HOME creare la cartella 'gechilx_client'.
 
 - Al suo interno copiare l'eseguibile gechilx.
 
 - Sempre nella cartella $HOME/gechilx_client copiare il file 'system.gec'.
- 
-- Sempre nella cartella $HOME/gechilx_client copiare lo script 'aggiorna_db_locale_gechilx.sh'.
 
-- Sempre nella cartella $HOME/gechilx_client creare le cartelle 'database' e 'database.local'.
+- Sempre nella cartella $HOME/gechilx_client creare la cartella 'database'.
 
 - Sempre nella cartella $HOME/gechilx_client creare la cartella 'log'.
 
 - Sempre nella cartella $HOME/gechilx_client creare una cartella 'gui' e copiare al suo interno 
   il file 'gechilx.glade' e tutti i file di immagini contenuti nella cartella 'gui' del progetto.
+  
+- Installare (se non presente nel sistema) il comando rsync.
 
-********** - Installare il client NFS 'sudo apt install nfs-common' *******
 
-- Installare il terminale XTerm 'sudo apt install xterm'
+INSTALLAZIONE SERVER:
+- Nella directory $HOME creare la cartella 'gechilx_db'.
 
-********** - Crearsi una copia di backup del file '/etc/fstab'.****************
+- Al suo interno creare la directory 'database', ed eventualmete copiare i file di dati di database
+  già creati se li abbiamo. Altrimenti possiamo lasciarla vuota ed i file verranno creati man mano
+  che usiamo il programma.
 
-*********************************************************************************************************************
-- Copiare il seguente testo (escluse le virgolette iniziali e finali nel file '/etc/fstab' (le righe che
-  iniziano con '#' possono essere omesse, ma servono da spiegazione) : 
- "# fa in modo che si possa montare la directory col database di gechilx dal server 10.10.19.200
-  # spiegazione opzioni di montaggio :
-  # -rw	classica read write
-  #
-  # -user		permette il montaggio anche agli utenti non superuser , NB il comando da usare è
-  # 			'mount /home/crv/gechilx_client/database' altrimenti da errore
-  #
-  # -noauto		non monta automaticamente il filesystem all'avvio, ma appunto bisogna usare il
-  # 			comando sopra indicato
-  10.10.19.200:/home/crv/gechilx_db/database	/home/crv/gechilx_client/database	nfs	rw,user,noauto	0	0"
-
-- Sostituire '10.10.19.200:/home/crv' con il giusto indirizzo ip del server e il giusto percorso dove si trova
-  la directory 'gechilx_db/database' che appunto contiene i file del database. 
-  NB: è l'eseguibile gechilx che si occupa di montare automaticamente il database dal server all'avvio e di
-  smontarlo all'uscita e di segnalare se ci sono errori.
-**********************************************************************************************************************
-**********************************************************************************************************************
-- Configurare NFS server sul pc che fa da SERVER :
-    1 - Installare nfs-kernel-server con 'sudo apt install nfs-kernel-server'.
-    2 - Verificare che il server sia in esecuzione 'sudo systemctl status nfs-kernel-server'.
-    3 - Modificare il file '/etc/exports' per indicare quale cartella vogliamo esportare e con quali attributi.
-        Esempio se inseriamo la seguente riga : 
-        /home/crv/gechilx_db/database      crv-pc(rw,sync,no_subtree_check) tabletmint(rw,sync,no_subtree_check)
-        Esporta la cartella '/home/crv/gechilx_db/database' presente sul server per essere condivisa solo con crv-pc 
-        e tabletmint in lettura e scrittura (rw) e altre opzioni.
-    4 - Applicare i cambiamenti alla configurazione con 'sudo exportfs -a'.
-    5 - Abilitare NFS server all'avvio automatico dopo un riavvio con 'sudo systemctl enable nfs-kernel-server'.
-***********************************************************************************************************************
- 
 
 CARATTERISTICHE ATTIVE :
-- Si lavora su di un database salvato sul pc che fa da server e ogni volta che
-  usciamo dal programma ci chiede se vogliamo salvare una copia del database sul
-  pc locale.
+- Implementazione client/server con possibilità di avere il database su di un server remoto.
+  Il database viene sincronizzato tra clent e server tramite il comando rsync che quindi deve
+  essere installato nel sistema.
 
 - Password di accesso. Modificato il meccanismo di ricerca della password.
 
