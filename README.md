@@ -43,6 +43,13 @@ INSTALLAZIONE CLIENT:
   
 - Installare (se non presente nel sistema) il comando rsync.
 
+- Generare chiave pubblica per rsync con il comando 'ssh-keygen'.
+
+- Copiare sul server la chiave pubblica con il comando 
+  'ssh-copy-id -i <percorso/nome_chiave_pubblica> <nome_server>'. Così facendo, rsync durante le
+  sicronizzazioni sul server non chiederà la password.
+
+
 
 INSTALLAZIONE SERVER:
 - Nella directory $HOME creare la cartella 'gechilx_db'.

@@ -58,7 +58,7 @@ int mese_caricato;
 int num_chiamata_selezionata;
 int schermata_corrente;			// serve a sapere la schermata correntemente visualizzata
 
-GtkWindow 	*window_principale, *window_modifica_chiamata, *window_informazioni;
+GtkWindow 	*window_principale, *window_modifica_chiamata, *window_informazioni, *window_config_server;
 
 GtkMenuBar	*barra_menu;
 
@@ -106,7 +106,7 @@ GtkEntry	*entry_password,
 
 GtkWidget	*entry_agg_appar, *entry_agg_cliente;
 
-GtkButton	*button_accedi, *button_reg_chiamata, *button_resoc_mese, *button_carica_mese,
+GtkButton	*button_accedi, *button_config_server, *button_reg_chiamata, *button_resoc_mese, *button_carica_mese,
 		*button_indietro, *button_copia_dati, *button_salva_chiamata, *button_salva_chiamata1, 
 		*button_annulla1, *button_lista_ch_mese,  *button_elimina_ch, *button_modifica_ch, *button_database, 
 		*button_agg_cliente, *button_agg_appar, *button_elimina_appar, *button_elimina_cliente,
@@ -3539,6 +3539,15 @@ static gboolean pressed_button_modifica_ch(GtkWidget *widget, gpointer callback_
 }
 
 
+/* se viene premuto il pulsante 'configura server' */
+static gboolean pressed_button_config_server(GtkWidget *widget, gpointer callback_data)
+{
+	gtk_widget_show_all((GtkWidget*)window_config_server);
+
+	return FALSE;
+}
+
+
 /* se viene premuto il pulsante 'database clienti e app' della schermata menu */
 static gboolean pressed_button_database(GtkWidget *widget, gpointer callback_data)
 {
@@ -4236,6 +4245,8 @@ int puntatori_widget(GtkBuilder *builder)
 
 	if((window_modifica_chiamata = (GtkWindow*)gtk_builder_get_object(builder, "window_modifica_chiamata")) == 0) return 0;
 
+	if((window_config_server = (GtkWindow*)gtk_builder_get_object(builder, "window_config_server")) == 0) return 0;
+
 	if((window_informazioni = (GtkWindow*)gtk_builder_get_object(builder, "window_informazioni")) == 0) return 0;
 
 	if((label_versione = (GtkLabel*)gtk_builder_get_object(builder, "label_versione")) == 0) return 0;
@@ -4305,6 +4316,8 @@ int puntatori_widget(GtkBuilder *builder)
 	if((button_elimina_ch = (GtkButton*)gtk_builder_get_object(builder, "button_elimina_ch")) == 0) return 0;
 
 	if((button_modifica_ch = (GtkButton*)gtk_builder_get_object(builder, "button_modifica_ch")) == 0) return 0;
+
+	if((button_config_server = (GtkButton*)gtk_builder_get_object(builder, "button_config_server")) == 0) return 0;
 
 	if((textbuffer_data = (GtkTextBuffer*)gtk_builder_get_object(builder, "textbuffer_data")) == 0) return 0;
 
@@ -4562,6 +4575,8 @@ void connessione_signal_handlers()
 	g_signal_connect(button_mod_comp_att, "clicked", G_CALLBACK(pressed_button_mod_comp_att), NULL);
 
 	g_signal_connect(button_modifica_ch, "clicked", G_CALLBACK(pressed_button_modifica_ch), NULL);
+
+	g_signal_connect(button_config_server, "clicked", G_CALLBACK(pressed_button_config_server), NULL);
 
 	g_signal_connect(button_elimina_ch, "clicked", G_CALLBACK(pressed_button_elimina_ch), NULL);
 
