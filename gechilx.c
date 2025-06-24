@@ -29,7 +29,8 @@
 
 GtkBuilder  *builder;
 
-gchar file_config_path[MAXPATHLEN];		// percorso del file 'system.gec'
+gchar file_system_path[MAXPATHLEN];		// percorso del file 'system.gec'
+gchar file_conf_path[MAXPATHLEN];		// percorso del file 'gechilx.conf'
 gchar file_chiamate_mese_path[MAXPATHLEN * 2];	// percorso del file chiamate aperto
 gchar file_clienti_path[MAXPATHLEN];		// percorso del file clienti.gec
 gchar file_appar_path[MAXPATHLEN];		// percorso del file appar.gec
@@ -130,17 +131,17 @@ GtkImage		*image_resoconto_mese, *image_stat_annuali;
 
 GtkRadioButton*		radio_button_array[MAX_NUM_CH_MESE];
 
-GtkTextBuffer	*textbuffer_data, *textbuffer_mese;
+GtkTextBuffer		*textbuffer_data, *textbuffer_mese;
 
 GtkTreeView		*view_clienti, *view_appar, *view_lista_ch_mese;
 
 GtkScrolledWindow	*scr_window_lista_ch_mese, *scr_window_clienti, *scr_window_appar;
 
-GFile			*file_chiamate_mese, *file_appar, *file_clienti, *file_config, *file_compensi;
+GFile			*file_chiamate_mese, *file_appar, *file_clienti, *file_system, *file_compensi, *file_conf;
 
-GFileIOStream	*file_chiamate_mese_iostream, *file_appar_iostream, *file_clienti_iostream, *file_config_iostream, *file_compensi_iostream;
+GFileIOStream	*file_chiamate_mese_iostream, *file_appar_iostream, *file_clienti_iostream, *file_system_iostream, *file_compensi_iostream, *file_conf_iostream;
 
-goffset		file_chiamate_mese_size, file_appar_size, file_clienti_size, file_config_size, file_compensi_size;
+goffset		file_chiamate_mese_size, file_appar_size, file_clienti_size, file_system_size, file_compensi_size, file_conf_size;
 
 GString		*pw_corrente;
 
@@ -665,14 +666,14 @@ goffset get_file_clienti_size()
 
 
 /* ritorna la dimensione del file di configurazione system.gec */
-goffset get_file_config_size()
+goffset get_file_system_size()
 {
 	GFileInfo *file_info;
 
 	file_info = g_file_info_new();
 
-	file_config = g_file_new_for_path(file_config_path);
-	file_info = g_file_query_info(file_config, G_FILE_ATTRIBUTE_STANDARD_SIZE, G_FILE_QUERY_INFO_NONE, NULL, NULL);
+	file_system = g_file_new_for_path(file_system_path);
+	file_info = g_file_query_info(file_system, G_FILE_ATTRIBUTE_STANDARD_SIZE, G_FILE_QUERY_INFO_NONE, NULL, NULL);
 
 	return g_file_info_get_size(file_info);
 }
@@ -695,15 +696,17 @@ goffset get_file_compensi_size()
 /* apre in lettura e scrittura il file chiamate mese ne legge il contenuto e lo copia nel buffer passato come argomento e ritorna il numero di bytes letti */
 gssize open_rw_file_ch_mese_read(gchar* buffer)
 {
+	GInputStream *input_stream;
+	gssize bytes_letti;
+
 	/* apre in lettura e scrittura il file chiamate mese */
 	file_chiamate_mese = g_file_new_for_path(file_chiamate_mese_path);
 	file_chiamate_mese_iostream = g_file_open_readwrite(file_chiamate_mese, NULL, NULL);
 
-	GInputStream *input_stream;
+	/* stream per leggere file chiamate mese */
 	input_stream = g_io_stream_get_input_stream((GIOStream*) file_chiamate_mese_iostream);
 
 	/* legge il contenuto del file chiamate mese e lo copia in buffer */
-	gssize bytes_letti;
 	bytes_letti = g_input_stream_read(input_stream, buffer, file_chiamate_mese_size, NULL, NULL);
 
 	/* chiude lo stream per la lettura */
@@ -722,9 +725,8 @@ gssize open_rw_file_ch_mese_read(gchar* buffer)
 	GInputStream *input_stream;
 	gssize bytes_letti;
 
-	file_appar = g_file_new_for_path(file_appar_path);
-
 	/* apre per leggere o scrivere il file appar.gec */
+	file_appar = g_file_new_for_path(file_appar_path);
 	file_appar_iostream = g_file_open_readwrite(file_appar, NULL, NULL);
 
 	/* stream per leggere file appar.gec */
@@ -745,23 +747,48 @@ gssize open_rw_file_ch_mese_read(gchar* buffer)
 /* apre in lettura e scrittura il file clienti.gec ne legge il contenuto e lo copia nel buffer passato come argomento e ritorna il numero di bytes letti */
  gssize open_rw_file_clienti_read(gchar* buffer)
 {
-	file_clienti = g_file_new_for_path(file_clienti_path);
+	GInputStream *input_stream;
+	gssize bytes_letti;
 
 	/* apre per leggere o scrivere il file clienti.gec */
+	file_clienti = g_file_new_for_path(file_clienti_path);
 	file_clienti_iostream = g_file_open_readwrite(file_clienti, NULL, NULL);
 
-	/* stream per leggere file appar.gec */
-	GInputStream *input_stream;
+	/* stream per leggere file clienti.gec */
 	input_stream = g_io_stream_get_input_stream((GIOStream*)file_clienti_iostream);
 
 	/* legge il file clienti.gec e copia il contenuto in buffer */
-	gssize bytes_letti;
 	bytes_letti = g_input_stream_read(input_stream, buffer, file_clienti_size, NULL, NULL);
 
 	/* chiude lo stream per la lettura */
 	g_input_stream_close(input_stream, NULL, NULL);
 
 	g_io_stream_close((GIOStream*)file_clienti_iostream, NULL, NULL);
+
+	return bytes_letti;
+}
+
+
+/* apre in lettura e scrittura il file gechilx.conf ne legge il contenuto e lo copia nel buffer passato come argomento e ritorna il numero di bytes letti */
+ gssize open_rw_file_conf_read(gchar* buffer)
+{
+	GInputStream *input_stream;
+	gssize bytes_letti;
+
+	/* apre per leggere o scrivere il file gechilx.conf */
+	file_conf = g_file_new_for_path(file_conf_path);
+	file_conf_iostream = g_file_open_readwrite(file_conf, NULL, NULL);
+
+	/* stream per leggere file gechilx.conf */
+	input_stream = g_io_stream_get_input_stream((GIOStream*)file_conf_iostream);
+
+	/* legge il file gechilx.conf e copia il contenuto in buffer */
+	bytes_letti = g_input_stream_read(input_stream, buffer, file_conf_size, NULL, NULL);
+
+	/* chiude lo stream per la lettura */
+	g_input_stream_close(input_stream, NULL, NULL);
+
+	g_io_stream_close((GIOStream*)file_conf_iostream, NULL, NULL);
 
 	return bytes_letti;
 }
@@ -1074,14 +1101,14 @@ void uscita()
 	if(modalita_ripristino)
 	{
 		/* apre il file di configurazione 'system.gec' in lettura e per future modifiche (r+) e ne ottiene il puntatore allo stream */
-		FILE *stream_file_config;
-		stream_file_config = fopen(file_config_path, "r+");
+		FILE *stream_file_system;
+		stream_file_system = fopen(file_system_path, "r+");
 
 		/* scrive '0' nel primo byte del file 'system.gec' */
-		fseek(stream_file_config, 0, SEEK_SET);
-		fputc('0', stream_file_config);
+		fseek(stream_file_system, 0, SEEK_SET);
+		fputc('0', stream_file_system);
 
-		fclose(stream_file_config);
+		fclose(stream_file_system);
 
 		goto USCITA;
 	}
@@ -1105,14 +1132,14 @@ void uscita()
 	if(sincronizzazione_verso_server != 0)
 	{
 		/* apre il file di configurazione 'system.gec' in lettura e per future modifiche (r+) e ne ottiene il puntatore allo stream */
-		FILE *stream_file_config;
-		stream_file_config = fopen(file_config_path, "r+");
+		FILE *stream_file_system;
+		stream_file_system = fopen(file_system_path, "r+");
 
 		/* scrive '1' nel primo byte del file 'system.gec' */
-		fseek(stream_file_config, 0, SEEK_SET);
-		fputc('1', stream_file_config);
+		fseek(stream_file_system, 0, SEEK_SET);
+		fputc('1', stream_file_system);
 
-		fclose(stream_file_config);
+		fclose(stream_file_system);
 
 		crea_dialog_box_un_pulsante(dialog_err_sincronizzazione, "ATTENZIONE!", "\n   Errore durante la sincronizzazione del database locale verso il server    \n",
 						window_principale, "   Esci   ");
@@ -1167,7 +1194,7 @@ static gboolean enter_key_pressed(GtkWidget *widget, GdkEvent *event, gpointer  
  * altrmenti segnala errore */
 static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 {
-	FILE *stream_file_config;
+	FILE *stream_file_system;
 	time_t rawtime;
 	struct tm *timeinfo;
 	char pw_accesso[MAX_CHAR_PW];
@@ -1178,10 +1205,10 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 	GOutputStream *output_stream;
 
 	/* apre il file di configurazione 'system.gec' in lettura e ne ottiene il puntatore allo stream */
-	stream_file_config = fopen(file_config_path, "r");
+	stream_file_system = fopen(file_system_path, "r");
 
 	/* se non riesce ad aprire il file di configurazione segnala l'errore con l' apposito dialog */
-	if(stream_file_config == 0)
+	if(stream_file_system == 0)
 	{
 		crea_dialog_box_un_pulsante(dialog_fceom, "ATTENZIONE!", "\n   File di configurazione errato o mancante    \n", window_principale, "Chiudi");
 		return FALSE;
@@ -1193,17 +1220,17 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 	* corrente nello stream o SEEK_END che calcola dalla fine dello stream) perchè la pw è scritta li. 
 	* Come offset ho scelto un valore a caso. */
 	offset = 326;
-	fseek(stream_file_config, offset, SEEK_SET);
+	fseek(stream_file_system, offset, SEEK_SET);
 	for(i = 0; i < MAX_CHAR_PW; i++)
 	{
 		/*legge un carattere e lo copia nell'array e sposta il puntatore al byte successivo */
-		pw_accesso[i] = getc(stream_file_config);
+		pw_accesso[i] = getc(stream_file_system);
 
 		if (pw_accesso[i] == 0) break;          // se è carattere nullo termina ciclo
 
 		/*sposta il puntatore al carattere successivo perchè il file 'system.gec è in wide_char e ogni carattere è di 
 		* 2 byte di cui il secondo nel nostro caso è sempre 0 visto che non abbiamo caratteri particolari */
-		getc(stream_file_config);
+		getc(stream_file_system);
 	}
 	pw_accesso[i+1] = 0; // mette lo zero per terminare la stringa
 
@@ -1329,7 +1356,7 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 	g_io_stream_close((GIOStream*)file_chiamate_mese_iostream, NULL, NULL);
 	g_io_stream_close((GIOStream*)file_compensi_iostream, NULL, NULL);
 
-	fclose(stream_file_config);
+	fclose(stream_file_system);
 
 	gtk_window_maximize(window_principale);
 
@@ -4001,16 +4028,16 @@ static gboolean pressed_button_ok(GtkWidget *widget, gpointer callback_data)
 	ustring_nuova_pw = g_utf8_to_utf16(str_nuova_pw, -1, NULL, &dim_ustring_nuova_pw, NULL);
 
 	/* dimensione file system.gec*/
-	file_config_size = get_file_config_size();
+	file_system_size = get_file_system_size();
 
 	/* copia il contenuto di system.gec in buffer */
-	file_config = g_file_new_for_path(file_config_path);
-	file_config_iostream = g_file_open_readwrite(file_config, NULL, NULL);
-	input_stream = g_io_stream_get_input_stream((GIOStream*)file_config_iostream);
-	gchar buffer[file_config_size];
-	g_input_stream_read(input_stream, buffer, file_config_size, NULL, NULL);
+	file_system = g_file_new_for_path(file_system_path);
+	file_system_iostream = g_file_open_readwrite(file_system, NULL, NULL);
+	input_stream = g_io_stream_get_input_stream((GIOStream*)file_system_iostream);
+	gchar buffer[file_system_size];
+	g_input_stream_read(input_stream, buffer, file_system_size, NULL, NULL);
 	g_input_stream_close(input_stream, NULL, NULL);
-	g_io_stream_close((GIOStream*)file_config_iostream, NULL, NULL);
+	g_io_stream_close((GIOStream*)file_system_iostream, NULL, NULL);
 
 	/* ottiene l'offset dove è scritta la password*/
 	offset = &buffer[326];
@@ -4019,12 +4046,12 @@ static gboolean pressed_button_ok(GtkWidget *widget, gpointer callback_data)
 	memcpy(offset, ustring_nuova_pw, MAX_CHAR_PW * 2);
 
 	/* sostituisce il contenuto di system.gec con buffer che contiene la pw modificata */
-	file_config_iostream = g_file_open_readwrite(file_config, NULL, NULL);
-	output_stream = g_io_stream_get_output_stream((GIOStream*)file_config_iostream);
-	gssize bytes_scritti = g_output_stream_write(output_stream, buffer, file_config_size, NULL, NULL);
+	file_system_iostream = g_file_open_readwrite(file_system, NULL, NULL);
+	output_stream = g_io_stream_get_output_stream((GIOStream*)file_system_iostream);
+	gssize bytes_scritti = g_output_stream_write(output_stream, buffer, file_system_size, NULL, NULL);
 
 	/* controlla se c'è stato errore nella scrittura della nuova pw*/
-	if(bytes_scritti != file_config_size)
+	if(bytes_scritti != file_system_size)
 	{
 		crea_dialog_box_un_pulsante(dialog_scrittura_nuova_pw_err, 
 			"ATTENZIONE!", "\n Non riesco a slavare la nuova password nell' apposito file \n", window_principale, "OK");
@@ -4033,7 +4060,7 @@ static gboolean pressed_button_ok(GtkWidget *widget, gpointer callback_data)
 
 	/* chiude i vari stream */
 	g_output_stream_close(output_stream, NULL, NULL);
-	g_io_stream_close((GIOStream*)file_config_iostream, NULL, NULL);
+	g_io_stream_close((GIOStream*)file_system_iostream, NULL, NULL);
 
 	/* dialog di conferma del cambio pw avvenuto */
 	crea_dialog_box_un_pulsante(dialog_conferma_cambio_pw, "OPERAZIONE ESEGUITA", "\n Password modificata con successo! \n", window_principale, "OK");
@@ -4693,7 +4720,7 @@ void connessione_signal_handlers()
 int main(int argc, char** argv) {
 
 	char controllo;
-	FILE *stream_file_config;
+	FILE *stream_file_system;
 	GError *error = NULL;
 	gchar label_descrizione_accesso_testo[256];
 
@@ -4710,7 +4737,8 @@ int main(int argc, char** argv) {
 	g_sprintf(database_dir_local, "%s/gechilx_client/database", home_dir);
 	g_sprintf(file_appar_path, "%s/database/appar.gec", program_dir_local);
 	g_sprintf(file_clienti_path, "%s/database/clienti.gec", program_dir_local);
-	g_sprintf(file_config_path, "%s/gechilx_client/system.gec", home_dir);
+	g_sprintf(file_system_path, "%s/gechilx_client/system.gec", home_dir);
+	g_sprintf(file_conf_path, "%s/gechilx_client/gechilx.conf", home_dir);
 	g_sprintf(file_gui_path, "%s/gechilx.glade", gui_dir);
 	g_sprintf(server_name, "ubuntu2025.freeddns.org");
 	g_sprintf(database_dir_server, "%s:~/gechilx_db/database", server_name);
@@ -4743,10 +4771,10 @@ int main(int argc, char** argv) {
 	gtk_label_set_text(label_descrizione_accesso, label_descrizione_accesso_testo); 
 
 	/* apre il file di configurazione 'system.gec' in lettura e ne ottiene il puntatore allo stream */
-	stream_file_config = fopen(file_config_path, "r");
+	stream_file_system = fopen(file_system_path, "r");
 
 	/* se non riesce ad aprire il file 'system.gec' segnala l'errore ed esce */
-	if(stream_file_config == 0)
+	if(stream_file_system == 0)
 	{
 		crea_dialog_box_un_pulsante(dialog_fceom, "ATTENZIONE!", 
 		"\n File di configurazione errato o mancante. \n Non è possibile proseguire. \n", window_principale, "Chiudi"); 
@@ -4755,7 +4783,7 @@ int main(int argc, char** argv) {
 
 	/* controlla se il primo carattere del file 'system.gec è '1' , in caso affermativo significa che la volta precedente si era
 	* lavorato su una copia del database locale, altrimenti accede al programma normalmente */
-	controllo = fgetc(stream_file_config);
+	controllo = fgetc(stream_file_system);
 	if(controllo == '1')
 	{
 		/* mostra la finestra di ripristino, tutti gli altri widget sono mostrati automaticamente da GtkBuilder */
