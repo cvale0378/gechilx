@@ -30,15 +30,15 @@
 GtkBuilder  *builder;
 
 gchar file_system_path[MAXPATHLEN];		// percorso del file 'system.gec'
-gchar file_conf_path[MAXPATHLEN];		// percorso del file 'gechilx.conf'
+gchar file_config_path[MAXPATHLEN];		// percorso del file 'gechilx.conf'
 gchar file_chiamate_mese_path[MAXPATHLEN * 2];	// percorso del file chiamate aperto
 gchar file_clienti_path[MAXPATHLEN];		// percorso del file clienti.gec
 gchar file_appar_path[MAXPATHLEN];		// percorso del file appar.gec
 gchar file_compensi_path[MAXPATHLEN * 2];	// percorso del file compensi.gec
 gchar file_gui_path[MAXPATHLEN];		// percorso del file per l'interfaccia grafica(gechilx.glade)
 gchar server_name[MAXPATHLEN];			// nome del server contenente il database del programma
-gchar program_dir_local[MAXPATHLEN];		// directory del programma in locale
-gchar database_dir_local[MAXPATHLEN];		// directory del database in locale
+gchar program_dir[MAXPATHLEN];			// directory del programma in locale
+gchar database_dir[MAXPATHLEN];			// directory del database del client
 gchar database_dir_server[MAXPATHLEN];		// directory del database sul server
 gchar gui_dir[MAXPATHLEN];			// directory della gui
 gchar comando[MAXPATHLEN];			// stringa per i comandi bash
@@ -69,7 +69,7 @@ GtkLabel	*label_titolo, *label_versione, *label_descrizione_accesso;
 					
 GtkBox		*box_accedi, *box_menu_princ, *box_reg_chiamata, *box_modifica_chiamata, *box_lista_ch_mese,
 		*box_clienti_appar, *box_resoconto_mese, *box_statistiche_annuali, *box_cambio_pw, 
-		*box_mod_comp_att, *box_ripristino;
+		*box_mod_comp_att, *box_ripristino, *box_radio_button_server_locale, *box_radio_button_server_remoto;
 
 GtkDialog	*dialog_fceom, *dialog_pwerr, *dialog_icoafc, *dialog_iafc, *dialog_elimina, *dialog_copia_dati, *dialog_flag, *dialog_agg_appar,
 		*dialog_agg_cliente, *dialog_vecchia_pw_err, *dialog_nuova_pw_err, *dialog_scrittura_nuova_pw_err, *dialog_conferma_cambio_pw,
@@ -103,7 +103,7 @@ GtkEntry	*entry_password,
 		*entry_comp_zc, *entry_comp_zc_dec,
 		*entry_comp_lav_ore, *entry_comp_lav_ore_dec,
 		*entry_comp_iva, *entry_anno_scelto, *entry_dato,
-		*entry_versione;
+		*entry_versione, *entry_nome_server_remoto;
 
 GtkWidget	*entry_agg_appar, *entry_agg_cliente;
 
@@ -112,7 +112,7 @@ GtkButton	*button_accedi, *button_config_server, *button_reg_chiamata, *button_r
 		*button_annulla1, *button_lista_ch_mese,  *button_elimina_ch, *button_modifica_ch, *button_database, 
 		*button_agg_cliente, *button_agg_appar, *button_elimina_appar, *button_elimina_cliente,
 		*button_stat_annuali, *button_aggiorna, *button_cambio_pw, *button_ok, *button_mod_comp_att, 
-		*button_salva_comp_att, *button_esci, *button_chiudi_informazioni;
+		*button_salva_comp_att, *button_esci, *button_chiudi_informazioni, *button_salva_config_server, *button_annulla_config_server;
 
 GtkCheckButton	*check_za, *check_za1,
 		*check_zb, *check_zb1,
@@ -129,23 +129,26 @@ GtkComboBoxText		*combo_box_text_cliente, *combo_box_text_appar, *combo_box_text
 
 GtkImage		*image_resoconto_mese, *image_stat_annuali;
 
-GtkRadioButton*		radio_button_array[MAX_NUM_CH_MESE];
-
 GtkTextBuffer		*textbuffer_data, *textbuffer_mese;
 
 GtkTreeView		*view_clienti, *view_appar, *view_lista_ch_mese;
 
 GtkScrolledWindow	*scr_window_lista_ch_mese, *scr_window_clienti, *scr_window_appar;
 
-GFile			*file_chiamate_mese, *file_appar, *file_clienti, *file_system, *file_compensi, *file_conf;
+GFile			*file_chiamate_mese, *file_appar, *file_clienti, *file_system, *file_compensi, *file_config;
 
-GFileIOStream	*file_chiamate_mese_iostream, *file_appar_iostream, *file_clienti_iostream, *file_system_iostream, *file_compensi_iostream, *file_conf_iostream;
+GFileIOStream	*file_chiamate_mese_iostream, *file_appar_iostream, *file_clienti_iostream, *file_system_iostream, *file_compensi_iostream, *file_config_iostream;
 
-goffset		file_chiamate_mese_size, file_appar_size, file_clienti_size, file_system_size, file_compensi_size, file_conf_size;
+goffset		file_chiamate_mese_size, file_appar_size, file_clienti_size, file_system_size, file_compensi_size, file_config_size;
 
 GString		*pw_corrente;
 
 GList		*elenco_clienti, *elenco_clienti_ordinato, *elenco_apparecchiature, *elenco_apparecchiature_ordinato;
+
+GtkWidget 	*radio_button_server_locale, *radio_button_server_remoto;
+GSList		*radio_button_group;
+
+
 
 /****
  ***
@@ -693,6 +696,20 @@ goffset get_file_compensi_size()
 }
 
 
+/* ritorna la dimensione del file gechilx.conf */
+goffset get_file_config_size()
+{
+	GFileInfo *file_info;
+
+	file_info = g_file_info_new();
+
+	file_config = g_file_new_for_path(file_config_path);
+	file_info = g_file_query_info(file_config, G_FILE_ATTRIBUTE_STANDARD_SIZE, G_FILE_QUERY_INFO_NONE, NULL, NULL);
+
+	return g_file_info_get_size(file_info);
+}
+
+
 /* apre in lettura e scrittura il file chiamate mese ne legge il contenuto e lo copia nel buffer passato come argomento e ritorna il numero di bytes letti */
 gssize open_rw_file_ch_mese_read(gchar* buffer)
 {
@@ -720,7 +737,7 @@ gssize open_rw_file_ch_mese_read(gchar* buffer)
 
 
 /* apre in lettura e scrittura il file appar.gec ne legge il contenuto e lo copia nel buffer passato come argomento e ritorna il numero di bytes letti  */
- gssize open_rw_file_appar_read(gchar* buffer)
+gssize open_rw_file_appar_read(gchar* buffer)
 {
 	GInputStream *input_stream;
 	gssize bytes_letti;
@@ -745,7 +762,7 @@ gssize open_rw_file_ch_mese_read(gchar* buffer)
    
 
 /* apre in lettura e scrittura il file clienti.gec ne legge il contenuto e lo copia nel buffer passato come argomento e ritorna il numero di bytes letti */
- gssize open_rw_file_clienti_read(gchar* buffer)
+gssize open_rw_file_clienti_read(gchar* buffer)
 {
 	GInputStream *input_stream;
 	gssize bytes_letti;
@@ -770,25 +787,25 @@ gssize open_rw_file_ch_mese_read(gchar* buffer)
 
 
 /* apre in lettura e scrittura il file gechilx.conf ne legge il contenuto e lo copia nel buffer passato come argomento e ritorna il numero di bytes letti */
- gssize open_rw_file_conf_read(gchar* buffer)
+gssize open_rw_file_config_read(gchar* buffer)
 {
 	GInputStream *input_stream;
 	gssize bytes_letti;
 
 	/* apre per leggere o scrivere il file gechilx.conf */
-	file_conf = g_file_new_for_path(file_conf_path);
-	file_conf_iostream = g_file_open_readwrite(file_conf, NULL, NULL);
+	file_config = g_file_new_for_path(file_config_path);
+	file_config_iostream = g_file_open_readwrite(file_config, NULL, NULL);
 
 	/* stream per leggere file gechilx.conf */
-	input_stream = g_io_stream_get_input_stream((GIOStream*)file_conf_iostream);
+	input_stream = g_io_stream_get_input_stream((GIOStream*)file_config_iostream);
 
 	/* legge il file gechilx.conf e copia il contenuto in buffer */
-	bytes_letti = g_input_stream_read(input_stream, buffer, file_conf_size, NULL, NULL);
+	bytes_letti = g_input_stream_read(input_stream, buffer, file_config_size, NULL, NULL);
 
 	/* chiude lo stream per la lettura */
 	g_input_stream_close(input_stream, NULL, NULL);
 
-	g_io_stream_close((GIOStream*)file_conf_iostream, NULL, NULL);
+	g_io_stream_close((GIOStream*)file_config_iostream, NULL, NULL);
 
 	return bytes_letti;
 }
@@ -1115,15 +1132,15 @@ void uscita()
 
 	/* separatore dei vari record del log */
 		g_sprintf(comando, "echo \"---------------------------------------------------------------------------------------\" >> %s/log/log_local_to_server_sync.txt",
-				   program_dir_local);
+				   program_dir);
 		system(comando);
 
 	/* inserisce la data e ora nel file log */
-	g_sprintf(comando, "date >> %s/log/log_local_to_server_sync.txt", program_dir_local);
+	g_sprintf(comando, "date >> %s/log/log_local_to_server_sync.txt", program_dir);
 	system(comando);
 	
 	/* sincronizza le modifiche effettuate nel database locale verso il server e ne da il resoconto nel fil di log*/
-	g_sprintf(comando, "rsync --times --verbose --rsh=ssh %s/* %s/ >> %s/log/log_local_to_server_sync.txt", database_dir_local, database_dir_server, program_dir_local);
+	g_sprintf(comando, "rsync --times --verbose --rsh=ssh %s/* %s/ >> %s/log/log_local_to_server_sync.txt", database_dir, database_dir_server, program_dir);
 	sincronizzazione_verso_server = system(comando);
 
 	/* se la sincronizzazione del database locale verso il server da errore, imposta a 1 il primo byte del file 'system.gec' in modo che al prossimo avvio del 
@@ -1145,7 +1162,7 @@ void uscita()
 						window_principale, "   Esci   ");
 
 		/* annota l'errore nel fil di log */
-		g_sprintf(comando, "echo \"errore : sincronizzazione verso il server non riuscita\" >> %s/log/log_local_to_server_sync.txt", program_dir_local);
+		g_sprintf(comando, "echo \"errore : sincronizzazione verso il server non riuscita\" >> %s/log/log_local_to_server_sync.txt", program_dir);
 		system(comando);
 	}
 
@@ -1169,8 +1186,21 @@ gint delete_event(GtkWidget *widget, GdkEvent event, gpointer data)
 		return TRUE;
 	}
 
-	
+	/* come sopra, ma distrugge i due radiobutton perchè sono creati direttamente dal programma ogni volta che visualizza la finestra di configurazione del server,
+	 * quindi quando la nascondiamo bisogna distruggerli alrimenti se la rivisualizziamo diventano due poi tre poi ecc... */
+	if(widget == ((GtkWidget*)window_config_server))
+	{
+		gtk_widget_hide((GtkWidget*)window_config_server);
+
+		gtk_widget_destroy((GtkWidget*)radio_button_server_locale);
+
+		gtk_widget_destroy((GtkWidget*)radio_button_server_remoto);
+
+		return TRUE;
+	}
+
 	uscita();
+
 	/* quando questa funzione ritorna FALSE , il delete-event diventa un destroy signal */
 	return FALSE;
 }
@@ -1260,7 +1290,7 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 					window_principale, "Si", "No", non_fare_nulla, uscita);
 
 		/* segna che stiamo lavorando sul database locale non sincronizzato col server nel file di log */
-		g_sprintf(comando, "echo \" - Si sta lavorando sul database locale non sicnronizzato col server\" >> %s/log/log_server_to_local_sync.txt", program_dir_local);
+		g_sprintf(comando, "echo \" - Si sta lavorando sul database locale non sicnronizzato col server\" >> %s/log/log_server_to_local_sync.txt", program_dir);
 		system(comando);
 	}
 
@@ -1279,7 +1309,7 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 	gtk_text_buffer_set_text(textbuffer_data, data, strlen(data));
 
 	/* formatta percorso file chiamate */
-	sprintf(file_chiamate_mese_path, "%s/database/%s%i.gec", program_dir_local, str_mese_lett, anno);
+	sprintf(file_chiamate_mese_path, "%s/database/%s%i.gec", program_dir, str_mese_lett, anno);
 
 	mostra_nome_file_ch_mese_caricato();
 
@@ -1319,7 +1349,7 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 	}
 
 	/* formatta percorso file compensi */
-	sprintf(file_compensi_path, "%s/compensi.gec", database_dir_local);
+	sprintf(file_compensi_path, "%s/compensi.gec", database_dir);
 
 	/* gfile relativo al file compensi */
 	file_compensi = g_file_new_for_path(file_compensi_path);
@@ -1703,7 +1733,7 @@ void calcola_totali_mesi(float *imp_mese, float *iva_mese, float *tot_mese, cons
 		}
 
 		/* formatta percorso file chiamate */
-		sprintf(file_chiamate_mese_path, "%s/database/%s%i.gec", program_dir_local, &str_mese[m] [0], anno_scelto);
+		sprintf(file_chiamate_mese_path, "%s/database/%s%i.gec", program_dir, &str_mese[m] [0], anno_scelto);
 
 		/* conta le attivita svolte nel mese e le salva i totali nell'array di strutture att. Il valore del primo
 		* indice dell'array corrisponde al mese, il valore del secondo indice dell'array corrisponde al giorno del mese*/
@@ -1775,7 +1805,7 @@ void calcola_attivita_tot_mesi(attivita *tot_attivita_mese, const gchar *string_
 		}
 
 	/* formatta percorso file chiamate */
-	sprintf(file_chiamate_mese_path, "%s/database/%s%i.gec", program_dir_local, &str_mese[m] [0], anno_scelto);
+	sprintf(file_chiamate_mese_path, "%s/database/%s%i.gec", program_dir, &str_mese[m] [0], anno_scelto);
 
 	/* conta le attivita svolte nel mese m e le salva i totali nell'array di strutture tot_attivita_mese[m]. 
 	 * Il valore del primo indice dell'array corrisponde al mese, il valore del secondo indice dell'array 
@@ -3569,10 +3599,116 @@ static gboolean pressed_button_modifica_ch(GtkWidget *widget, gpointer callback_
 /* se viene premuto il pulsante 'configura server' */
 static gboolean pressed_button_config_server(GtkWidget *widget, gpointer callback_data)
 {
+	int i;
+
+	char *str_pointer;
+	char ch_tipo_server;
+	char *str_nome_server;
+
+	/* crea i due radio button locale e remoto che hanno gli stati alternati (quando si attiva uno si disattiva l'altro) */ 
+	radio_button_server_locale = gtk_radio_button_new_with_label (NULL, "Locale");
+	gtk_box_pack_start (GTK_BOX (box_radio_button_server_locale), radio_button_server_locale, TRUE, TRUE, 0);
+	gtk_widget_show (radio_button_server_locale);
+
+	radio_button_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (radio_button_server_locale));
+	radio_button_server_remoto = gtk_radio_button_new_with_label (radio_button_group, "Remoto");
+	gtk_box_pack_start (GTK_BOX (box_radio_button_server_remoto), radio_button_server_remoto, TRUE, TRUE, 0);
+	gtk_widget_show (radio_button_server_remoto);
+
+	/* legge il contenuto del file di configurazione e lo copia in buffer */
+	file_config_size = get_file_config_size();
+	gchar buffer[file_config_size];
+	open_rw_file_config_read(buffer);
+
+	/* cerca in buffer che contiene una copia del file di configurazione la stringa "TIPO SERVER (L)ocale o (R)emoto=" e se la trova ritorna 
+	 * il puntatore all'inizio della stringa */
+	str_pointer = strstr(buffer, "TIPO SERVER (L)ocale o (R)emoto=");
+
+	/* carattere che identifica il tipo di server (L o R) che si trova dopo il carattere '=' della stringa di cui sopra */
+	ch_tipo_server = str_pointer[32];
+
+	/* una volta letto il tipo server dal file di configurazione attiva il radio button corrispondente e nel caso di server remoto scrive
+	 * anche il nome del server nell' apposito entry */
+	if(ch_tipo_server == 'L')
+	{
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON (radio_button_server_locale), TRUE);
+	}
+	else
+	{
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON (radio_button_server_remoto), TRUE);
+
+		str_nome_server = strstr(buffer, "NOME SERVER REMOTO="); // puntatore all'inizio della linea del nome del server
+
+		for(i = 0 ; i >= 0 ; i++)	// sostituisce il carattere a capo a fine linea con zero in modo che possa essere trattata da stringa
+		{
+			if(str_nome_server[i] == '\n') 
+			{
+				str_nome_server[i] = 0;
+				break;
+			}
+		}
+
+		str_nome_server = &str_nome_server[19]; // il nome del server inizia dopo il carattere '='
+
+		gtk_entry_set_text(entry_nome_server_remoto, str_nome_server);	// scrive il nome del server nell' entry
+	}
+
 	gtk_widget_show_all((GtkWidget*)window_config_server);
 
 	return FALSE;
 }
+
+
+
+
+
+
+
+
+
+/* se viene premuto il pulsante 'salva' nella configurazione server */
+static gboolean pressed_button_salva_config_server(GtkWidget *widget, gpointer callback_data)
+{
+	gboolean server_locale;
+
+	/* selezionando server locale, la variabile server_locale viene settata a TRUE */
+	server_locale = gtk_toggle_button_get_active((GtkToggleButton*)radio_button_server_locale);
+
+	if(server_locale)
+	{
+		
+	}
+
+	return FALSE;
+}
+
+
+
+/* se viene premuto il pulsante 'annulla' nella configurazione server*/
+static gboolean pressed_button_annulla_config_server(GtkWidget *widget, gpointer callback_data)
+{
+	/* nasconde la finestra di configurazione server */
+	gtk_widget_hide((GtkWidget*)window_config_server);
+
+	/* distrugge i due radiobutton perchè sono creati direttamente dal programma ogni volta che visualizza la finestra di configurazione del server,
+	 * quindi quando la nascondiamo bisogna distruggerli alrimenti se la rivisualizziamo diventano due poi tre poi ecc... */
+	gtk_widget_destroy((GtkWidget*)radio_button_server_locale);
+
+	gtk_widget_destroy((GtkWidget*)radio_button_server_remoto);
+
+	return FALSE;
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 /* se viene premuto il pulsante 'database clienti e app' della schermata menu */
@@ -3964,7 +4100,7 @@ static gboolean pressed_button_carica_mese(GtkWidget *widget, gpointer callback_
 									NULL);
 
 	/* fa in modo che il dialog appena aperto mostri subito il contenuto della cartella database dove sono presenti i file chiamate */
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), database_dir_local);;
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), database_dir);;
 
 	/* visualizza ed esegue il dialog finchè non lo chiudiamo o premiamo apri o annulla. Se premiamo apri ottiene in filename il nome 
 	 * (completo di percorso)
@@ -4078,7 +4214,7 @@ static gboolean pressed_button_indietro(GtkWidget *widget, gpointer callback_dat
 		g_list_free(elenco_clienti_ordinato);
 		g_list_free(elenco_apparecchiature);
 		g_list_free(elenco_apparecchiature_ordinato);
-		
+
 		cambia_schermata(box_reg_chiamata, box_menu_princ);
 	}
 	if(schermata_corrente == SCHERMATA_RESOCONTO) cambia_schermata(box_resoconto_mese, box_menu_princ);
@@ -4114,7 +4250,7 @@ static gboolean pressed_button_copia_dati(GtkWidget *widget, gpointer callback_d
 
 	/* conta le attivita svolte nel mese e ne salva i totali nell'array di strutture att. Il valore dell'indice dell'array corrisponde al giorno del mese */
 	conta_attivita(&att[0]);
-	
+
 	/* ciclo che riempie il buffer_dat i*/
 	for(i = 1; i <= 31; i++)
 	{
@@ -4264,7 +4400,7 @@ static gboolean pressed_button_chiudi_informazioni(GtkWidget *widget, gpointer c
  ***    PUNTATORI WIDGET
  ***
  ****/
-/* iniziallizza i puntatori di tutti i widget che useremo e se c'è un errore  ritorna 0, se va tutto bene ritorna 1 , inoltra setta alcune proprietà */
+/* iniziallizza i puntatori di tutti i widget che useremo e se c'è un errore  ritorna 0, se va tutto bene ritorna 1 , inoltre setta alcune proprietà */
 int puntatori_widget(GtkBuilder *builder)
 {
 	/* se la gtk_builder_get_object ritorna puntatore nullo c'è un errore */
@@ -4441,6 +4577,8 @@ int puntatori_widget(GtkBuilder *builder)
 
 	if((entry_comp_iva = (GtkEntry*)gtk_builder_get_object(builder, "entry_comp_iva")) == 0) return 0;
 
+	if((entry_nome_server_remoto = (GtkEntry*)gtk_builder_get_object(builder, "entry_nome_server_remoto")) == 0) return 0;
+
 	if((button_salva_comp_att = (GtkButton*)gtk_builder_get_object(builder, "button_salva_comp_att")) == 0) return 0;
 
 	if((entry_gg1 = (GtkEntry*)gtk_builder_get_object(builder, "entry_gg1")) == 0) return 0;
@@ -4500,7 +4638,7 @@ int puntatori_widget(GtkBuilder *builder)
 
 	if((scr_window_appar =(GtkScrolledWindow*)gtk_builder_get_object(builder, "scr_window_appar")) == 0) return 0;
 
-    if((scr_window_lista_ch_mese =(GtkScrolledWindow*)gtk_builder_get_object(builder, "scr_window_lista_ch_mese")) == 0) return 0;
+	if((scr_window_lista_ch_mese =(GtkScrolledWindow*)gtk_builder_get_object(builder, "scr_window_lista_ch_mese")) == 0) return 0;
 
 	if((button_agg_appar = (GtkButton*)gtk_builder_get_object(builder, "button_agg_appar")) == 0) return 0;
 
@@ -4527,6 +4665,16 @@ int puntatori_widget(GtkBuilder *builder)
 	if((entry_conf_nuova_pw = (GtkEntry*)gtk_builder_get_object(builder, "entry_conf_nuova_pw")) == 0) return 0;
 
 	if((button_ok = (GtkButton*)gtk_builder_get_object(builder, "button_ok")) == 0) return 0;
+
+	if((button_salva_config_server = (GtkButton*)gtk_builder_get_object(builder, "button_salva_config_server")) == 0) return 0;
+
+	if((button_annulla_config_server = (GtkButton*)gtk_builder_get_object(builder, "button_annulla_config_server")) == 0) return 0;
+
+	if((box_radio_button_server_locale = (GtkBox*)gtk_builder_get_object(builder, "box_radio_button_server_locale")) == 0) return 0;
+
+	if((box_radio_button_server_remoto = (GtkBox*)gtk_builder_get_object(builder, "box_radio_button_server_remoto")) == 0) return 0;
+
+
 
 /****
  ***    widget che non vengono caricati direttamente dal builder, ma che vengono   
@@ -4570,6 +4718,8 @@ void connessione_signal_handlers()
 	g_signal_connect(window_modifica_chiamata, "delete_event", G_CALLBACK(delete_event), NULL);
 
 	g_signal_connect(window_principale, "delete-event", G_CALLBACK(delete_event), NULL);
+
+	g_signal_connect(window_config_server, "delete-event", G_CALLBACK(delete_event), NULL);
 
 	g_signal_connect(menu_aiuto_informazioni, "activate", G_CALLBACK(pressed_menu_aiuto_informazioni), NULL);
 
@@ -4707,6 +4857,10 @@ void connessione_signal_handlers()
 
 	g_signal_connect(button_ok, "clicked", G_CALLBACK(pressed_button_ok), NULL);
 
+	g_signal_connect(button_salva_config_server, "clicked", G_CALLBACK(pressed_button_salva_config_server), NULL);
+
+	g_signal_connect(button_annulla_config_server, "clicked", G_CALLBACK(pressed_button_annulla_config_server), NULL);
+
 	return;
 }
 
@@ -4732,13 +4886,13 @@ int main(int argc, char** argv) {
 	home_dir = g_getenv("HOME");
 
 	/* definisce le directory e i percorsi dei file principali */
-	g_sprintf(gui_dir, "%s/gechilx_client/gui", home_dir);
-	g_sprintf(program_dir_local, "%s/gechilx_client", home_dir);
-	g_sprintf(database_dir_local, "%s/gechilx_client/database", home_dir);
-	g_sprintf(file_appar_path, "%s/database/appar.gec", program_dir_local);
-	g_sprintf(file_clienti_path, "%s/database/clienti.gec", program_dir_local);
-	g_sprintf(file_system_path, "%s/gechilx_client/system.gec", home_dir);
-	g_sprintf(file_conf_path, "%s/gechilx_client/gechilx.conf", home_dir);
+	g_sprintf(program_dir, "%s/gechilx", home_dir);
+	g_sprintf(gui_dir, "%s/gui", program_dir);
+	g_sprintf(database_dir, "%s/database", program_dir);
+	g_sprintf(file_appar_path, "%s/appar.gec", database_dir);
+	g_sprintf(file_clienti_path, "%s/clienti.gec", database_dir);
+	g_sprintf(file_system_path, "%s/system.gec", program_dir);
+	g_sprintf(file_config_path, "%s/gechilx.conf", program_dir);
 	g_sprintf(file_gui_path, "%s/gechilx.glade", gui_dir);
 	g_sprintf(server_name, "ubuntu2025.freeddns.org");
 	g_sprintf(database_dir_server, "%s:~/gechilx_db/database", server_name);
@@ -4770,7 +4924,7 @@ int main(int argc, char** argv) {
 
 	gtk_label_set_text(label_descrizione_accesso, label_descrizione_accesso_testo); 
 
-	/* apre il file di configurazione 'system.gec' in lettura e ne ottiene il puntatore allo stream */
+	/* apre il file 'system.gec' in lettura e ne ottiene il puntatore allo stream */
 	stream_file_system = fopen(file_system_path, "r");
 
 	/* se non riesce ad aprire il file 'system.gec' segnala l'errore ed esce */
@@ -4806,17 +4960,17 @@ int main(int argc, char** argv) {
 	{
 		/* separatore dei vari record del log */
 		g_sprintf(comando, "echo \"---------------------------------------------------------------------------------------\" >> %s/log/log_server_to_local_sync.txt",
-				   program_dir_local);
+				   program_dir);
 		system(comando);
 
 		/* inserisce la data e ora nel file log */
-		g_sprintf(comando, "date >> %s/log/log_server_to_local_sync.txt", program_dir_local);
+		g_sprintf(comando, "date >> %s/log/log_server_to_local_sync.txt", program_dir);
 		system(comando);
-		
+
 		/* prova a sincronizzare la directory del database sul server con quella in locale , se la sincronizzazione va a buon fine
 		 * abbiamo una copia del database presente sul server remoto nel pc locale , la variabile 'database_sincronizzato' diventa TRUE
 		 * e il programma prosegue normalmente, altrimenti ci verrà chiesto se vogliamo lavorare su una copia del batabase locale */
-		g_sprintf(comando, "rsync --times --verbose --rsh=ssh %s/* %s/ >> %s/log/log_server_to_local_sync.txt", database_dir_server, database_dir_local, program_dir_local);
+		g_sprintf(comando, "rsync --times --verbose --rsh=ssh %s/* %s/ >> %s/log/log_server_to_local_sync.txt", database_dir_server, database_dir, program_dir);
 		if(!(system(comando))) database_sincronizzato = TRUE;
 
 		gtk_window_set_default_size(window_principale, 800, 600);

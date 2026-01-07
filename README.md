@@ -26,7 +26,7 @@ azzurro		0.020	0.588	0.580
 grigio		0.420	0.439	0.439
 
 
-	
+
 INSTALLAZIONE CLIENT:
 - Nella directory $HOME creare la cartella 'gechilx_client'.
 
@@ -54,14 +54,14 @@ INSTALLAZIONE CLIENT:
 INSTALLAZIONE SERVER:
 - Nella directory $HOME creare la cartella 'gechilx_db'.
 
-- Al suo interno creare la directory 'database', ed eventualmete copiare i file di dati di database
+- Al suo interno creare la directory 'database', ed eventualmente copiare i file di dati di database
   già creati se li abbiamo. Altrimenti possiamo lasciarla vuota ed i file verranno creati man mano
   che usiamo il programma.
 
 
 CARATTERISTICHE ATTIVE :
 - Implementazione client/server con possibilità di avere il database su di un server remoto.
-  Il database viene sincronizzato tra clent e server tramite il comando rsync che quindi deve
+  Il database viene sincronizzato tra client e server tramite il comando rsync che quindi deve
   essere installato nel sistema.
 
 - Password di accesso. Modificato il meccanismo di ricerca della password.
