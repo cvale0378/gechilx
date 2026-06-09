@@ -8,6 +8,14 @@
 #ifndef	_GECHILX_H
 #define	_GECHILX_H
 
+/* Codici di errore */
+#define NO_ERROR			0	// nessun errore
+#define ERR_NO_CONF_FILE		2	// impossibile aprire il file gechilx.conf
+#define ERR_NO_SYST_FILE		3	// impossibile aprire il file system.gec
+#define ERR_NO_CH_FILE			4	// impossibile aprire il file chiamate
+#define ERR_NO_COMP_FILE		5	// impossibile aprire il file compensi.gec
+
+/* Schermate del programma */
 #define	SCHERMATA_ACCESSO		0
 #define	SCHERMATA_MENU_PRINC		1
 #define	SCHERMATA_REG_CH		2

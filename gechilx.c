@@ -11,7 +11,7 @@
 /* INFORMAZIONI E PROCEDURA DI INSTALLAZIONE CONTENUTE NEL FILE README.md */
  
   
-#define     VERSION	"25.03"
+#define     VERSION	"26.06"
 #define     ARCH	"64"	/* architettura cpu in char */
 #define     ARCH_NUM	64	/* architettura cpu in int  */
 
@@ -71,9 +71,9 @@ GtkBox		*box_accedi, *box_menu_princ, *box_reg_chiamata, *box_modifica_chiamata,
 		*box_clienti_appar, *box_resoconto_mese, *box_statistiche_annuali, *box_cambio_pw, 
 		*box_mod_comp_att, *box_ripristino, *box_radio_button_server_locale, *box_radio_button_server_remoto;
 
-GtkDialog	*dialog_fceom, *dialog_pwerr, *dialog_icoafc, *dialog_iafc, *dialog_elimina, *dialog_copia_dati, *dialog_flag, *dialog_agg_appar,
+GtkDialog	*dialog_fseom, *dialog_pwerr, *dialog_icoafc, *dialog_iafc, *dialog_elimina, *dialog_copia_dati, *dialog_flag, *dialog_agg_appar,
 		*dialog_agg_cliente, *dialog_vecchia_pw_err, *dialog_nuova_pw_err, *dialog_scrittura_nuova_pw_err, *dialog_conferma_cambio_pw,
-		*dialog_comp_err, *dialog_db_server_no, *dialog_err_sincronizzazione;
+		*dialog_comp_err, *dialog_db_server_no, *dialog_err_sincronizzazione, *dialog_err_apertura_file_conf, *dialog_riavvio;
 
 GtkViewport	*viewport;
 
@@ -109,10 +109,10 @@ GtkWidget	*entry_agg_appar, *entry_agg_cliente;
 
 GtkButton	*button_accedi, *button_config_server, *button_reg_chiamata, *button_resoc_mese, *button_carica_mese,
 		*button_indietro, *button_copia_dati, *button_salva_chiamata, *button_salva_chiamata1, 
-		*button_annulla1, *button_lista_ch_mese,  *button_elimina_ch, *button_modifica_ch, *button_database, 
+		*button_indietro_mod_ch, *button_lista_ch_mese,  *button_elimina_ch, *button_modifica_ch, *button_database, 
 		*button_agg_cliente, *button_agg_appar, *button_elimina_appar, *button_elimina_cliente,
 		*button_stat_annuali, *button_aggiorna, *button_cambio_pw, *button_ok, *button_mod_comp_att, 
-		*button_salva_comp_att, *button_esci, *button_chiudi_informazioni, *button_salva_config_server, *button_annulla_config_server;
+		*button_salva_comp_att, *button_esci, *button_chiudi_informazioni, *button_salva_config_server, *button_indietro_config_server;
 
 GtkCheckButton	*check_za, *check_za1,
 		*check_zb, *check_zb1,
@@ -542,7 +542,7 @@ const gchar *num_to_giorno(int ngiorno)
 /* nasconde la schermata corrente e visualizza quella scelta */
 void cambia_schermata(GtkBox *box_corr, GtkBox *box_scelto)
 {
-	/* nasconde il pulsante 'indietro' e lo visualizza solo se serve nellla schermata che sarà visualizzata */
+	/* nasconde il pulsante 'indietro' e lo visualizza solo se serve nella schermata che sarà visualizzata */
 	gtk_widget_hide((GtkWidget*)button_indietro);
 
 	/* visualizza la barre dei menù */
@@ -795,6 +795,16 @@ gssize open_rw_file_config_read(gchar* buffer)
 	/* apre per leggere o scrivere il file gechilx.conf */
 	file_config = g_file_new_for_path(file_config_path);
 	file_config_iostream = g_file_open_readwrite(file_config, NULL, NULL);
+
+	/* se non riesce ad aprire il file di configurazione gechilx.conf , segnala il problema ed esce dal programma ritornando il codice di errore */
+	if(file_config_iostream == 0)
+	{
+		crea_dialog_box_un_pulsante(dialog_err_apertura_file_conf, 
+						"ATTENZIONE!", "\n\n		Impossibile aprire il file di configurazione gechilx.conf .		\n\
+		Verificare che si trovi all'interno della directory 'gechilx' .		\n\n",
+						window_principale, " Esci ");
+		exit(ERR_NO_CONF_FILE);
+	}
 
 	/* stream per leggere file gechilx.conf */
 	input_stream = g_io_stream_get_input_stream((GIOStream*)file_config_iostream);
@@ -1148,7 +1158,7 @@ void uscita()
 	* Se cosi fosse il programma ci avviserà e ci dirà di sistemare le cose */
 	if(sincronizzazione_verso_server != 0)
 	{
-		/* apre il file di configurazione 'system.gec' in lettura e per future modifiche (r+) e ne ottiene il puntatore allo stream */
+		/* apre il file 'system.gec' in lettura e per future modifiche (r+) e ne ottiene il puntatore allo stream */
 		FILE *stream_file_system;
 		stream_file_system = fopen(file_system_path, "r+");
 
@@ -1158,8 +1168,11 @@ void uscita()
 
 		fclose(stream_file_system);
 
-		crea_dialog_box_un_pulsante(dialog_err_sincronizzazione, "ATTENZIONE!", "\n   Errore durante la sincronizzazione del database locale verso il server    \n",
-						window_principale, "   Esci   ");
+		crea_dialog_box_un_pulsante(dialog_err_sincronizzazione, 
+						"ATTENZIONE!", 
+						"\n\n		Errore durante la sincronizzazione del database locale verso il server.		\n\n",
+						window_principale, 
+						"   Esci   ");
 
 		/* annota l'errore nel fil di log */
 		g_sprintf(comando, "echo \"errore : sincronizzazione verso il server non riuscita\" >> %s/log/log_local_to_server_sync.txt", program_dir);
@@ -1169,6 +1182,7 @@ void uscita()
 	USCITA:
 	gtk_widget_destroy((GtkWidget*)window_principale);
 	gtk_main_quit();
+	exit(0);
 }
 
 
@@ -1237,11 +1251,15 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 	/* apre il file di configurazione 'system.gec' in lettura e ne ottiene il puntatore allo stream */
 	stream_file_system = fopen(file_system_path, "r");
 
-	/* se non riesce ad aprire il file di configurazione segnala l'errore con l' apposito dialog */
+	/* se non riesce ad aprire il file system.gec segnala l'errore con l' apposito dialog */
 	if(stream_file_system == 0)
 	{
-		crea_dialog_box_un_pulsante(dialog_fceom, "ATTENZIONE!", "\n   File di configurazione errato o mancante    \n", window_principale, "Chiudi");
-		return FALSE;
+		crea_dialog_box_un_pulsante(dialog_fseom, 
+						"ATTENZIONE!", 
+						"\n\n		File di configurazione errato o mancante		\n\n", 
+						window_principale, 
+						" Esci ");
+		exit(ERR_NO_SYST_FILE);
 	}
 
 	/* legge password dall'apposito file */
@@ -1286,7 +1304,8 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 	if(!(database_sincronizzato))
 	{
 		crea_dialog_box_due_pulsanti(dialog_db_server_no, "ATTENZIONE !", 
-					"\n Non è stato possibile sincronizzare il database locale con quello sul server.\n Vuoi proseguire con una copia del database locale ? \n", 
+					"\n\n		Non è stato possibile sincronizzare il database locale con quello sul server.		\n\
+		Vuoi proseguire con una copia del database locale ?		\n\n", 
 					window_principale, "Si", "No", non_fare_nulla, uscita);
 
 		/* segna che stiamo lavorando sul database locale non sincronizzato col server nel file di log */
@@ -1319,7 +1338,7 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 	/* prova a creare il file chiamate in lettura/scrittura dal gfile */
 	file_chiamate_mese_iostream = g_file_create_readwrite(file_chiamate_mese, G_FILE_CREATE_NONE, NULL, NULL);
 
-	/* se la g_file_create_readwrite ritorna  valore diverso da zero è andata a buon fine quindi inseriamo l' intestazione all'inizio del file */
+	/* se la g_file_create_readwrite ritorna valore diverso da zero è andata a buon fine quindi inseriamo l' intestazione all'inizio del file */
 	if(file_chiamate_mese_iostream != 0)
 	{
 		gchar buffer[LENGHT_CHIAMATA_BYTE] = {0};
@@ -1339,12 +1358,15 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 		/* prova ad aprire il file chiamate in lettura/scrittura */
 		file_chiamate_mese_iostream = g_file_open_readwrite(file_chiamate_mese, NULL, NULL);
 
-		/* se non riesce neanche ad aprirlo segnala l'errore */
+		/* se non riesce neanche ad aprirlo segnala l'errore ed esce dal programma */
 		if(file_chiamate_mese_iostream == 0)
 		{
-			crea_dialog_box_un_pulsante(dialog_icoafc, "ATTENZIONE!", "\n   Impossibile creare o aprire il file chiamate    \n",
-							window_principale, "Chiudi");
-			return FALSE;
+			crea_dialog_box_un_pulsante(dialog_icoafc, 
+							"ATTENZIONE!", 
+							"\n\n		Impossibile creare o aprire il file chiamate.		\n\n",
+							window_principale, 
+							" Esci ");
+			exit(ERR_NO_CH_FILE);
 		}
 	}
 
@@ -1357,11 +1379,15 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 	/* prova ad aprire il file compensi in lettura/scrittura */
 	file_compensi_iostream = g_file_open_readwrite(file_compensi, NULL, NULL);
 
-	/* se non riesce  ad aprirlo segnala l'errore */
+	/* se non riesce  ad aprirlo segnala l'errore ed esce dal programma */
 	if(file_compensi_iostream == 0)
 	{
-		crea_dialog_box_un_pulsante(dialog_iafc, "ATTENZIONE!", "\n   Impossibile aprire il file compensi    \n", window_principale, "Chiudi");
-		return FALSE;
+		crea_dialog_box_un_pulsante(dialog_iafc, 
+						"ATTENZIONE!", 
+						"\n\n		Impossibile aprire il file compensi		\n\n", 
+						window_principale, 
+						" Esci ");
+		exit(ERR_NO_COMP_FILE);
 	}
 
 	/* ottiene dimensione del file compensi e crea un buffer per copiarne il contenuto */
@@ -1388,9 +1414,31 @@ static gboolean pressed_button_accedi(GtkWidget *widget, gpointer callback_data)
 
 	fclose(stream_file_system);
 
+	gtk_widget_destroy((GtkWidget*)button_config_server);
+
 	gtk_window_maximize(window_principale);
 
 	cambia_schermata(box_accedi, box_menu_princ);
+
+	return FALSE;
+}
+
+/* se viene premuto uno dei due radio buttorn nella finestra configura server fa in modo che l'entry nel quale scriveremo il nome del server
+ * sia editabile solo se è premuto il radio button server remoto, invece se è premuto il radio button server locale non si può scrivere
+ * nell' entry */
+static gboolean pressed_radio_button_server_group(GtkWidget *widget, gpointer callback_data)
+{
+	/* se è stato premuto il radio_button_server_locale disattiva la possibilità di scrivere nell'entry del nome server */
+	if(gtk_toggle_button_get_active((GtkToggleButton*)radio_button_server_locale))
+	{
+		gtk_editable_set_editable((GtkEditable*)entry_nome_server_remoto, FALSE);
+	}
+
+	/* se è stato premuto il radio_button_server_remoto attiva la possibilità di scrivere nell'entry del nome server */
+	if(gtk_toggle_button_get_active((GtkToggleButton*)radio_button_server_remoto))
+	{
+		gtk_editable_set_editable((GtkEditable*)entry_nome_server_remoto, TRUE);
+	}
 
 	return FALSE;
 }
@@ -2940,7 +2988,7 @@ static gboolean pressed_button_salva_chiamata1(GtkWidget *widget, gpointer callb
 
 
 /* se viene premuto il pulsante 'annulla' della schermata modifica chiamata */
-static gboolean pressed_button_annulla1(GtkWidget *widget, gpointer callback_data)
+static gboolean pressed_button_indietro_mod_ch(GtkWidget *widget, gpointer callback_data)
 {
 	gtk_widget_hide((GtkWidget*)window_modifica_chiamata);
 
@@ -3606,21 +3654,23 @@ static gboolean pressed_button_config_server(GtkWidget *widget, gpointer callbac
 	char *str_nome_server;
 
 	/* crea i due radio button locale e remoto che hanno gli stati alternati (quando si attiva uno si disattiva l'altro) */ 
-	radio_button_server_locale = gtk_radio_button_new_with_label (NULL, "Locale");
-	gtk_box_pack_start (GTK_BOX (box_radio_button_server_locale), radio_button_server_locale, TRUE, TRUE, 0);
-	gtk_widget_show (radio_button_server_locale);
+	radio_button_server_locale = gtk_radio_button_new_with_label(NULL, "Locale");
+	gtk_box_pack_start(GTK_BOX(box_radio_button_server_locale), radio_button_server_locale, TRUE, TRUE, 0);
+	gtk_widget_show(radio_button_server_locale);
+	g_signal_connect(radio_button_server_locale, "clicked", G_CALLBACK(pressed_radio_button_server_group), NULL);
 
-	radio_button_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (radio_button_server_locale));
-	radio_button_server_remoto = gtk_radio_button_new_with_label (radio_button_group, "Remoto");
-	gtk_box_pack_start (GTK_BOX (box_radio_button_server_remoto), radio_button_server_remoto, TRUE, TRUE, 0);
-	gtk_widget_show (radio_button_server_remoto);
+	radio_button_group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radio_button_server_locale));
+	radio_button_server_remoto = gtk_radio_button_new_with_label(radio_button_group, "Remoto");
+	gtk_box_pack_start(GTK_BOX(box_radio_button_server_remoto), radio_button_server_remoto, TRUE, TRUE, 0);
+	gtk_widget_show(radio_button_server_remoto);
+	g_signal_connect(radio_button_server_remoto, "clicked", G_CALLBACK(pressed_radio_button_server_group), NULL);
 
 	/* legge il contenuto del file di configurazione e lo copia in buffer */
 	file_config_size = get_file_config_size();
 	gchar buffer[file_config_size];
 	open_rw_file_config_read(buffer);
 
-	/* cerca in buffer che contiene una copia del file di configurazione la stringa "TIPO SERVER (L)ocale o (R)emoto=" e se la trova ritorna 
+	/* cerca in buffer, che contiene una copia del file di configurazione, la stringa "TIPO SERVER (L)ocale o (R)emoto=" e se la trova ritorna 
 	 * il puntatore all'inizio della stringa */
 	str_pointer = strstr(buffer, "TIPO SERVER (L)ocale o (R)emoto=");
 
@@ -3631,11 +3681,11 @@ static gboolean pressed_button_config_server(GtkWidget *widget, gpointer callbac
 	 * anche il nome del server nell' apposito entry */
 	if(ch_tipo_server == 'L')
 	{
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON (radio_button_server_locale), TRUE);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(radio_button_server_locale), TRUE);
 	}
 	else
 	{
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON (radio_button_server_remoto), TRUE);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(radio_button_server_remoto), TRUE);
 
 		str_nome_server = strstr(buffer, "NOME SERVER REMOTO="); // puntatore all'inizio della linea del nome del server
 
@@ -3659,33 +3709,134 @@ static gboolean pressed_button_config_server(GtkWidget *widget, gpointer callbac
 }
 
 
-
-
-
-
-
-
-
 /* se viene premuto il pulsante 'salva' nella configurazione server */
 static gboolean pressed_button_salva_config_server(GtkWidget *widget, gpointer callback_data)
 {
 	gboolean server_locale;
+	char *str_pointer;
+	GFileOutputStream *output_stream;
+	const gchar *str_nome_server;
+	size_t str_nome_server_len;
+	int n;
 
-	/* selezionando server locale, la variabile server_locale viene settata a TRUE */
+	/* legge il contenuto del file di configurazione e lo copia in buffer */
+	file_config_size = get_file_config_size();
+	gchar buffer[file_config_size], str1[file_config_size], str2[file_config_size], str3[file_config_size], str4[file_config_size], str5[file_config_size];
+	memset(buffer, 0, file_config_size + 1);	// contenuto di buffer a tutti zeri, così può essere trattato come una stringa
+	open_rw_file_config_read(buffer);
+
+	/* cancella il file gechilx.conf, dopo sarà ricreato con i nuovi parametri che vogliamo salvare */
+	g_file_delete(file_config, NULL, NULL);
+
+	/* se è selezionato server locale, la variabile server_locale viene settata a TRUE */
 	server_locale = gtk_toggle_button_get_active((GtkToggleButton*)radio_button_server_locale);
 
 	if(server_locale)
 	{
+		// imposta la directory del database per l'utilizzo corrente
+		g_sprintf(database_dir_server, "%s/gechilx_db/database", home_dir);
+
+		// modifica a L(ocale) il parametro del tipo di server nel buffer che verrà copiato nel nuovo file gechilx.conf 
+		str_pointer = strstr(buffer, "TIPO SERVER (L)ocale o (R)emoto=");
+		n = strlen("TIPO SERVER (L)ocale o (R)emoto=");
+		str_pointer[n] = 'L';
+
+		/* conta i caratteri del parametro "NOME SERVER REMOTO=<vecchio nome server remoto>" e copia in str2 il contenuto del file gechilx.conf
+		 * seguenti al nome del vecchio server remoto */
+		str_pointer = strstr(buffer, "NOME SERVER REMOTO=");
+		n = strlen("NOME SERVER REMOTO=");
+		while(str_pointer[n] != '\n')
+		{
+			n++;
+		}
+		strcpy(str2, &str_pointer[n]);
 		
+		/* copia il contenuto del file gechilx.conf in str1 e poi la tronca in modo che l'ultimo carattere sia il carattere '=' dopo
+		 * il parametro "NOME SERVER REMOTO" */
+		strcpy(str1, buffer);
+		str_pointer = strstr(str1, "NOME SERVER REMOTO=");
+		n = strlen("NOME SERVER REMOTO=");
+		str_pointer[n] = 0;
+
+		/* copia in str3 il contenuto del file gechilx.conf fino a prima del nome del server remoto, poi aggiunge l'ultima parte del file, 
+		 * quella dopo il nome del server remoto , così abbiamo eliminato la stringa del nome del server dal parametro */
+		strcpy(str3, str1);
+		strcat(str3, str2);
+
+		/* ricrea il file gechilx.conf e ottiene lo stream per scriverne il contenuto */
+		file_config = g_file_new_for_path(file_config_path);
+		output_stream = g_file_create(file_config, G_FILE_CREATE_NONE, NULL, NULL);
+
+		/* scrive il nuovo file gechilx.conf */
+		g_output_stream_write((GOutputStream*)output_stream, str3, strlen(str3), NULL, NULL);
+
+		/* chiude i vari stream */
+		g_output_stream_close((GOutputStream*)output_stream, NULL, NULL);
+		g_io_stream_close((GIOStream*)file_config_iostream, NULL, NULL);
 	}
+	else 
+	{
+		// ottiene la stringa inserita come nome del server dall'entry
+		str_nome_server = gtk_entry_get_text(GTK_ENTRY(entry_nome_server_remoto));
+
+		// imposta la directory del database per l'utilizzo corrente
+		g_sprintf(database_dir_server, "%s:~/gechilx_db/database", str_nome_server);
+
+		// modifica a R(emoto) il parametro del tipo di server nel buffer che verrà copiato nel nuovo file gechilx.conf 
+		str_pointer = strstr(buffer, "TIPO SERVER (L)ocale o (R)emoto=");
+		n = strlen("TIPO SERVER (L)ocale o (R)emoto=");
+		str_pointer[n] = 'R';
+
+		// str6 è il buffer finale che scriveremo nel file gechilx.conf
+		str_nome_server_len = strlen(str_nome_server);
+		gchar str6[file_config_size + str_nome_server_len];
+
+		/* conta i caratteri del parametro "NOME SERVER REMOTO=<vecchio nome server remoto>" e copia in str5 il contenuto del file gechilx.conf
+		 * seguenti al nome del vecchio server remoto */
+		str_pointer = strstr(buffer, "NOME SERVER REMOTO=");
+		n = strlen("NOME SERVER REMOTO=");
+		while(str_pointer[n] != '\n')
+		{
+			n++;
+		}
+		strcpy(str5, &str_pointer[n]);
+
+		/* copia il contenuto del file gechilx.conf in str4 e poi la tronca in modo che l'ultimo carattere sia il carattere '=' dopo
+		 * il parametro "NOME SERVER REMOTO" */
+		strcpy(str4, buffer);
+		str_pointer = strstr(str4, "NOME SERVER REMOTO=");
+		n = strlen("NOME SERVER REMOTO=");
+		str_pointer[n] = 0;
+
+		/* copia in str6 il contenuto del file gechilx.conf fino a prima del nome del server remoto, poi aggiunge il nome del nuovo server remoto,
+		 * infine aggiunge l'ultima parte del file, quella dopo il nome del server remoto */
+		strcpy(str6, str4);
+		strcat(str6, str_nome_server);
+		strcat(str6, str5);
+
+		/* ricrea il file gechilx.conf , ottiene lo stream per scriverne il contenuto e scrive il nuovo contenuto cioè il buffer str6 */
+		file_config = g_file_new_for_path(file_config_path);
+		output_stream = g_file_create(file_config, G_FILE_CREATE_NONE, NULL, NULL);
+		g_output_stream_write((GOutputStream*)output_stream, str6, strlen(str6), NULL, NULL);
+
+		/* chiude i vari stream */
+		g_output_stream_close((GOutputStream*)output_stream, NULL, NULL);
+		g_io_stream_close((GIOStream*)file_config_iostream, NULL, NULL);
+	}
+
+	crea_dialog_box_un_pulsante(dialog_riavvio, "ATTENZIONE!", 
+					"\n\n		Riavvio del programma necessario affinchè le modifiche abbiano effetto.		\n\n\
+		Il programma verrà chiuso.		\n\n", 
+						window_principale, 
+						" Esci "); 
+		exit(NO_ERROR);
 
 	return FALSE;
 }
 
 
-
 /* se viene premuto il pulsante 'annulla' nella configurazione server*/
-static gboolean pressed_button_annulla_config_server(GtkWidget *widget, gpointer callback_data)
+static gboolean pressed_button_indietro_config_server(GtkWidget *widget, gpointer callback_data)
 {
 	/* nasconde la finestra di configurazione server */
 	gtk_widget_hide((GtkWidget*)window_config_server);
@@ -3698,17 +3849,6 @@ static gboolean pressed_button_annulla_config_server(GtkWidget *widget, gpointer
 
 	return FALSE;
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 /* se viene premuto il pulsante 'database clienti e app' della schermata menu */
@@ -3878,7 +4018,7 @@ static gboolean pressed_button_agg_appar(GtkWidget *widget, gpointer callback_da
 	file_appar_iostream = g_file_open_readwrite(file_appar, NULL, NULL);
 	output_stream = g_io_stream_get_output_stream((GIOStream*)file_appar_iostream);
 
-	/* ottiene la posizione nello stream che in questo caso ,visto che non abbiamo ancora fatto nessuna operazione con esso , sarà zero */
+	/* ottiene la posizione nello stream che in questo caso, visto che non abbiamo ancora fatto nessuna operazione con esso , sarà zero */
 	offset = g_seekable_tell((GSeekable *)output_stream);
 
 	/* sposta la posizione alla fine dello stream in modo da poter scrivere nel file partendo dalla fine di esso*/
@@ -4145,7 +4285,7 @@ static gboolean pressed_button_ok(GtkWidget *widget, gpointer callback_data)
 	if(strcmp(str_vecchia_pw, pw_corrente->str) != 0)
 	{
 		crea_dialog_box_un_pulsante(dialog_vecchia_pw_err, "ATTENZIONE!", "\n       Vecchia pw ERRATA!       \n",  window_principale, "OK");
-	return FALSE;
+		return FALSE;
 	}
 
 	/* se la nuova password e la conferma non corrispondono visulazza il dialog col messaggio d'errore ed esce */
@@ -4462,7 +4602,7 @@ int puntatori_widget(GtkBuilder *builder)
 
 	if((button_salva_chiamata1 = (GtkButton*)gtk_builder_get_object(builder, "button_salva_chiamata1")) == 0) return 0;
 
-	if((button_annulla1 = (GtkButton*)gtk_builder_get_object(builder, "button_annulla1")) == 0) return 0;
+	if((button_indietro_mod_ch = (GtkButton*)gtk_builder_get_object(builder, "button_indietro_mod_ch")) == 0) return 0;
 
 	if((button_database = (GtkButton*)gtk_builder_get_object(builder, "button_database")) == 0) return 0;
 
@@ -4668,7 +4808,7 @@ int puntatori_widget(GtkBuilder *builder)
 
 	if((button_salva_config_server = (GtkButton*)gtk_builder_get_object(builder, "button_salva_config_server")) == 0) return 0;
 
-	if((button_annulla_config_server = (GtkButton*)gtk_builder_get_object(builder, "button_annulla_config_server")) == 0) return 0;
+	if((button_indietro_config_server = (GtkButton*)gtk_builder_get_object(builder, "button_indietro_config_server")) == 0) return 0;
 
 	if((box_radio_button_server_locale = (GtkBox*)gtk_builder_get_object(builder, "box_radio_button_server_locale")) == 0) return 0;
 
@@ -4759,7 +4899,7 @@ void connessione_signal_handlers()
 
 	g_signal_connect(button_salva_chiamata1, "clicked", G_CALLBACK(pressed_button_salva_chiamata1), NULL);
 
-	g_signal_connect(button_annulla1, "clicked", G_CALLBACK(pressed_button_annulla1), NULL);
+	g_signal_connect(button_indietro_mod_ch, "clicked", G_CALLBACK(pressed_button_indietro_mod_ch), NULL);
 
 	g_signal_connect(button_salva_chiamata, "clicked", G_CALLBACK(pressed_button_salva_chiamata), NULL);
 
@@ -4859,7 +4999,7 @@ void connessione_signal_handlers()
 
 	g_signal_connect(button_salva_config_server, "clicked", G_CALLBACK(pressed_button_salva_config_server), NULL);
 
-	g_signal_connect(button_annulla_config_server, "clicked", G_CALLBACK(pressed_button_annulla_config_server), NULL);
+	g_signal_connect(button_indietro_config_server, "clicked", G_CALLBACK(pressed_button_indietro_config_server), NULL);
 
 	return;
 }
@@ -4873,10 +5013,14 @@ void connessione_signal_handlers()
  *****/
 int main(int argc, char** argv) {
 
+	int n, i;
 	char controllo;
 	FILE *stream_file_system;
 	GError *error = NULL;
 	gchar label_descrizione_accesso_testo[256];
+	char str_nome_server[MAXPATHLEN];
+	char *str_pointer;
+	char ch_tipo_server, ch;
 
 	/* setta alcune variabili globali usate in seguito */
 	database_sincronizzato = FALSE;
@@ -4894,8 +5038,6 @@ int main(int argc, char** argv) {
 	g_sprintf(file_system_path, "%s/system.gec", program_dir);
 	g_sprintf(file_config_path, "%s/gechilx.conf", program_dir);
 	g_sprintf(file_gui_path, "%s/gechilx.glade", gui_dir);
-	g_sprintf(server_name, "ubuntu2025.freeddns.org");
-	g_sprintf(database_dir_server, "%s:~/gechilx_db/database", server_name);
 
 	/* inizializza GTK+ */
 	gtk_init(&argc, &argv);
@@ -4924,15 +5066,51 @@ int main(int argc, char** argv) {
 
 	gtk_label_set_text(label_descrizione_accesso, label_descrizione_accesso_testo); 
 
+	/* legge il contenuto del file di configurazione e lo copia in buffer */
+	file_config_size = get_file_config_size();
+	gchar buffer[file_config_size];
+	open_rw_file_config_read(buffer);
+
+	/* rileva se server locale o remoto leggendo il contenuto di buffer (spiegato meglio nella pressed_button_config_server) */
+	str_pointer = strstr(buffer, "TIPO SERVER (L)ocale o (R)emoto=");
+	n = strlen("TIPO SERVER (L)ocale o (R)emoto=");
+	ch_tipo_server = str_pointer[n];
+
+	if(ch_tipo_server == 'L')	// se server locale, cioè la directory del database è su questo pc
+	{
+		g_sprintf(database_dir_server, "%s/gechilx_db/database", home_dir);
+	}
+	else				// se server remoto ottiene il nome del server dal file di configurazione e imposta il percorso della directory 
+	{				// del database sul server
+		str_pointer = strstr(buffer, "NOME SERVER REMOTO=");
+		i = 0;
+		n = strlen("NOME SERVER REMOTO=");
+		ch = str_pointer[n];
+		while(ch != '\n')
+		{
+			str_nome_server[i] = ch;
+			n++;
+			i++;
+			ch = str_pointer[n];
+		}
+		str_nome_server[i] = 0;
+		
+	g_sprintf(database_dir_server, "%s:~/gechilx_db/database", str_nome_server);
+	}
+
 	/* apre il file 'system.gec' in lettura e ne ottiene il puntatore allo stream */
 	stream_file_system = fopen(file_system_path, "r");
 
 	/* se non riesce ad aprire il file 'system.gec' segnala l'errore ed esce */
 	if(stream_file_system == 0)
 	{
-		crea_dialog_box_un_pulsante(dialog_fceom, "ATTENZIONE!", 
-		"\n File di configurazione errato o mancante. \n Non è possibile proseguire. \n", window_principale, "Chiudi"); 
-		return 1;
+		crea_dialog_box_un_pulsante(dialog_fseom, 
+						"ATTENZIONE!", 
+						"\n\n		File di configurazione errato o mancante.		\n\n\
+		Non è possibile proseguire.		\n\n", 
+						window_principale, 
+						" Esci "); 
+		exit(ERR_NO_SYST_FILE);
 	}
 
 	/* controlla se il primo carattere del file 'system.gec è '1' , in caso affermativo significa che la volta precedente si era
@@ -4956,7 +5134,7 @@ int main(int argc, char** argv) {
 		
 		gtk_widget_grab_focus((GtkWidget*)button_esci);	//focus sul pulsante Esci
 	}
-	else // avvio normale del programma
+	else	// avvio normale del programma
 	{
 		/* separatore dei vari record del log */
 		g_sprintf(comando, "echo \"---------------------------------------------------------------------------------------\" >> %s/log/log_server_to_local_sync.txt",

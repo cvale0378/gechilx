@@ -14,14 +14,14 @@ CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
 User                   :=cristiano
-Date                   :=01/07/2026
+Date                   :=09/06/26
 CodeLitePath           :=/home/crv/.codelite
-LinkerName             :=/usr/bin/g++
-SharedObjectLinkerName :=/usr/bin/g++ -shared -fPIC
+LinkerName             :=g++
+SharedObjectLinkerName :=g++ -shared -fPIC
 ObjectSuffix           :=.o
 DependSuffix           :=.o.d
-PreprocessSuffix       :=.i
-DebugSwitch            :=-g 
+PreprocessSuffix       :=.o.i
+DebugSwitch            :=-gstab
 IncludeSwitch          :=-I
 LibrarySwitch          :=-l
 OutputSwitch           :=-o 
@@ -33,7 +33,7 @@ OutputFile             :=$(IntermediateDirectory)/$(ProjectName)
 Preprocessors          :=
 ObjectSwitch           :=-o 
 ArchiveOutputSwitch    := 
-PreprocessOnlySwitch   :=-E
+PreprocessOnlySwitch   :=-E 
 ObjectsFileList        :="gechilx.txt"
 PCHCompileFlags        :=
 MakeDirCommand         :=mkdir -p
@@ -49,13 +49,13 @@ LibPath                := $(LibraryPathSwitch).
 ## Common variables
 ## AR, CXX, CC, AS, CXXFLAGS and CFLAGS can be overridden using an environment variable
 ##
-AR       := /usr/bin/ar rcu
-CXX      := /usr/bin/g++
-CC       := /usr/bin/gcc
+AR       := ar rcus
+CXX      := g++
+CC       := gcc
 CXXFLAGS :=  -g -O0 -Wall $(Preprocessors)
 CFLAGS   :=  -g -Wall -O0 $(shell pkg-config --cflags gtk+-3.0) $(Preprocessors)
 ASFLAGS  := 
-AS       := /usr/bin/as
+AS       := as
 
 
 ##
@@ -94,13 +94,10 @@ PreBuild:
 ## Objects
 ##
 $(IntermediateDirectory)/gechilx.c$(ObjectSuffix): gechilx.c
-	@$(CC) $(CFLAGS) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/gechilx.c$(ObjectSuffix) -MF$(IntermediateDirectory)/gechilx.c$(DependSuffix) -MM gechilx.c
 	$(CC) $(SourceSwitch) "/home/crv/CodeLiteProjects/Workspace/gechilx/gechilx.c" $(CFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/gechilx.c$(ObjectSuffix) $(IncludePath)
 $(IntermediateDirectory)/gechilx.c$(PreprocessSuffix): gechilx.c
 	$(CC) $(CFLAGS) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/gechilx.c$(PreprocessSuffix) gechilx.c
 
-
--include $(IntermediateDirectory)/*$(DependSuffix)
 ##
 ## Clean
 ##

@@ -4187,8 +4187,8 @@ Vecchia Password</property>
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="button_annulla_config_server">
-                <property name="label" translatable="yes">Annulla</property>
+              <object class="GtkButton" id="button_indietro_config_server">
+                <property name="label" translatable="yes">Indietro</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -4241,6 +4241,18 @@ Vecchia Password</property>
             <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">3</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkImage">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="stock">gtk-discard</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">4</property>
           </packing>
         </child>
       </object>
@@ -5384,8 +5396,8 @@ Vecchia Password</property>
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="button_annulla1">
-                <property name="label" translatable="yes">Annulla</property>
+              <object class="GtkButton" id="button_indietro_mod_ch">
+                <property name="label" translatable="yes">Indietro</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
@@ -5421,11 +5433,35 @@ Vecchia Password</property>
                 <property name="position">3</property>
               </packing>
             </child>
+            <child>
+              <object class="GtkImage">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="stock">gtk-discard</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">4</property>
+              </packing>
+            </child>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkImage">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="stock">gtk-discard</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">3</property>
           </packing>
         </child>
       </object>
